@@ -73,18 +73,23 @@ if __name__ == '__main__':
 	parser.add_argument('-R','--rundir', help='Run directory containing BCL files',dest='rundir')
 	parser.add_argument('-O','--outdir', help='Output directory',dest='outdir')
 	parser.add_argument('-P','--prefix',help='Output file prefix',dest='prefix')
+	parser.add_argument('--force_overwrite_all', action='store_true', help='Force overwrite of all steps of pipeline regardless of files already present.')
+	parser.add_argument('--force_overwrite_bcl2fastq', action='store_true', help='Force overwrite bcl2fastq regardless of files already present.')
+
 	args = parser.parse_args()
 
 	# Initialize directories required for the pipeline
 	print 'Initializing directories for pipeline...'
 	initialize_directories(args.outdir)
 
-
-	print "Converting BCL files..."
-	bcl2fastq_command = 'module load modules modules-init modules-gs bcl2fastq/2.16 fastqc/0.10.1; bcl2fastq --runfolder-dir ' + args.rundir + ' -o ' + FASTQ_DIRECTORY + ' --ignore-missing-filter'
+	# Submit bcl2fastq only if no existing results or if user wants to overwrite
+	if len(os.listdir(FASTQ_DIRECTORY)) == 0 or args.force_overwrite_all or args.force_overwrite_quantification:
+		print 'Starting bcl2fastq...'
+		bcl2fastq_command = 'module load modules modules-init modules-gs bcl2fastq/2.16 fastqc/0.10.1; bcl2fastq --runfolder-dir ' + args.rundir + ' -o ' + FASTQ_DIRECTORY + ' --ignore-missing-filter'
+		subprocess.call(bcl2fastq_command, shell=True)
+	else:
+		print 'fastq directory is not empty, skipping bcl2fastq. Specify --force_overwrite_all or --force_overwrite_bcl2fastq to redo.'
 	
-	subprocess.call(bcl2fastq_command, shell=True)
-
 	print "Cleaning fastq files..."
 
 	fastq_files = [f for f in os.listdir(FASTQ_DIRECTORY) if os.path.isfile(os.path.join(FASTQ_DIRECTORY, f))]
