@@ -98,15 +98,16 @@ if __name__ == '__main__':
 
 	print "Fixing barcodes..."
 
-	barcode_command = 'python ' BARCODE_CORRECTER ' -F ' + CLEAN_R1 + ' -R ' + CLEAN_R2 + ' -O ' + args.outdir + ' -o ' + args.prefix
+	barcode_command = 'python ' + BARCODE_CORRECTER + ' -F ' + CLEAN_R1 + ' -R ' + CLEAN_R2 + ' -O ' + args.outdir + ' -o ' + args.prefix
 	subprocess.call(barcode_command, shell=True)
 
 	print "Trimming adapters..."
 
-	trimmer_command = 'java -Xmx1G -jar ' + TRIMMOMATIC PE + args.outdir + args.prefix + 
-	'.split.1.fq.gz ' + args.outdir + args.prefix + '.split.2.fq.gz ' + args.outdir + args.prefix + '.split.1.trimmed.paired.fastq.gz ' + 
-	args.outdir + args.prefix + '.split.1.trimmed.unpaired.fastq.gz ' + args.outdir + args.prefix + '.split.2.trimmed.paired.fastq.gz ' + args.outdir + args.prefix + 
-	'.split.2.trimmed.unpaired.fastq.gz ILLUMINACLIP:/net/shendure/vol1/home/cusanovi/bin/Trimmomatic-0.32/adapters/NexteraPE-PE.fa:2:30:10:1:true MINLEN:20'
+	trimmer_command = 'java -Xmx1G -jar ' + TRIMMOMATIC + ' PE ' + args.outdir + args.prefix + '.split.1.fq.gz ' + \
+		args.outdir + args.prefix + '.split.2.fq.gz ' + args.outdir + args.prefix + '.split.1.trimmed.paired.fastq.gz ' + \
+		args.outdir + args.prefix + '.split.1.trimmed.unpaired.fastq.gz ' + args.outdir + args.prefix + \
+		'.split.2.trimmed.paired.fastq.gz ' + args.outdir + args.prefix + \
+		'.split.2.trimmed.unpaired.fastq.gz ILLUMINACLIP:/net/shendure/vol1/home/cusanovi/bin/Trimmomatic-0.32/adapters/NexteraPE-PE.fa:2:30:10:1:true MINLEN:20'
 	
 
 	print "Cleaning up..."
