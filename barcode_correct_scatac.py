@@ -49,9 +49,9 @@ if __name__ == '__main__':
 
 	nex_i5 = ["TATAGCCT","ATAGAGGC","CCTATCCT","GGCTCTGA","AGGCGAAG","TAATCTTA","CAGGACGT","GTACTGAC"]
 
-
 	log = open(outpref + 'barcode_correct_log.txt', 'a')
-	log_mes = print('{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now())) + " Starting processing\n"
+	
+	log_mes = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) + ' Starting processing\n'
 	log.write(log_mes)
 	
 	output1 = outpref + 'split.1.fq.gz')
@@ -101,7 +101,7 @@ if __name__ == '__main__':
 	log_mes = "Sequences processed: " + str(count)  + "\nSequences kept: " + str(kept) + " " + str(kept/float(count)) + " %" 
 	log.write(log_mes)
 
-	log_mes = print('{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now())) + " Done\n"
+	log_mes = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) + ' Done\n'
 	log.write(log_mes)
 	log.close()
 
