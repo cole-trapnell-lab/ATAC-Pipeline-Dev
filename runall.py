@@ -38,6 +38,7 @@ SGE_LOGS_DIRECTORY = 'sge_logs'
 SGE_CONFIGURATION = '-b y -shell y -cwd -j y -o %s -e %s' % (SGE_LOGS_DIRECTORY, SGE_LOGS_DIRECTORY)
 
 # Folders generated and used by pipeline
+print(OUTPUT_PATH)
 FASTQ_DIRECTORY = os.path.join(OUTPUT_PATH, 'fastqs')
 
 # Scripts that are generated and used by the pipeline

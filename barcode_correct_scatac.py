@@ -51,12 +51,9 @@ if __name__ == '__main__':
 
 
 	log = open(os.path.join(runall.OUTPUT_PATH, 'log.txt', 'a'))
-	log_mes = print('{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now())) + " Starting processing\n"
+	log_mes = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) + ' Starting processing\n'
 	log.write(log_mes)
 	
-	output1 = os.path.join(runall.OUTPUT_PATH, runall.OUTPUT_PREFIX, 'split.1.fq.gz')
-	output2 = os.path.join(runall.OUTPUT_PATH, runall.OUTPUT_PREFIX, 'split.2.fq.gz')
-
 	with gzip.open(runall.BAR_OUT1, 'wb') as o:
 		o.write('')
 	with gzip.open(runall.BAR_OUT2, 'wb') as g:
@@ -100,7 +97,7 @@ if __name__ == '__main__':
 	log_mes = "Sequences processed: " + str(count)  + "\nSequences kept: " + str(kept) + " " + str(kept/float(count)) + " %" 
 	log.write(log_mes)
 
-	log_mes = print('{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now())) + " Done\n"
+	log_mes = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) + ' Done\n'
 	log.write(log_mes)
 	log.close()
 
