@@ -51,20 +51,20 @@ if __name__ == '__main__':
 	nex_i5 = ["TATAGCCT","ATAGAGGC","CCTATCCT","GGCTCTGA","AGGCGAAG","TAATCTTA","CAGGACGT","GTACTGAC"]
 
 	# Open barcode correction log
-	log = open(outpref + 'barcode_correct_log.txt', 'a')
+	log = open(args.outpref + 'barcode_correct_log.txt', 'a')
 	log_mes = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) + ' Starting processing\n'
 	log.write(log_mes)
 	
 	# Open output files
-	output1 = outpref + 'split.1.fq.gz')
-	output2 = outpref + 'split.2.fq.gz')
+	output1 = args.outpref + 'split.1.fq.gz'
+	output2 = args.outpref + 'split.2.fq.gz'
 	with gzip.open(output1, 'wb') as o:
 		o.write('')
 	with gzip.open(output2, 'wb') as g:
 		g.write('')
 
 	# Collect fastqs
-	fastq_files = [f for f in os.listdir(fastqpath) if os.path.isfile(os.path.join(fastqpath, f))]	
+	fastq_files = [f for f in os.listdir(args.fastqpath) if os.path.isfile(os.path.join(args.fastqpath, f))]	
 	R1_files = [f for f in fastq_files if 'R1' in f]
 	R2_files = [f for f in fastq_files if 'R2' in f]
 
@@ -72,8 +72,8 @@ if __name__ == '__main__':
 	kept = 0
 
 	for i in range(len(R1_files)):
-		with gzip.open(os.path.join(fastqpath, R1_files[i]), 'rb') as f:
-			with gzip.open(os.path.join(fastqpath, R2_files[i]), 'rb') as r:
+		with gzip.open(os.path.join(args.fastqpath, R1_files[i]), 'rb') as f:
+			with gzip.open(os.path.join(args.fastqpath, R2_files[i]), 'rb') as r:
 				for tag_line in f:
 					tag_line = tag_line.strip().split()[1].split(':')[3].replace('+','')
 					count += 1
