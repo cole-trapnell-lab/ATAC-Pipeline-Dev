@@ -62,13 +62,12 @@ if __name__ == '__main__':
 	with gzip.open(runall.BAR_OUT2, 'wb') as g:
 		g.write('')
 
-
 	count = 0
 	kept = 0
 	with gzip.open(runall.CLEAN_R1, 'rb') as f:
 		with gzip.open(runall.CLEAN_R2, 'rb') as r:
 			for tag_line in f:
-				tag_line = tag_line.strip('@0123456789:\n')
+				tag_line = tag_line.strip().split()[1].split(':')[3].replace('+','')
 				count += 1
 				read_line = next(f)
 				plus_line = next(f)
