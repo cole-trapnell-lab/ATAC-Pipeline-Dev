@@ -14,6 +14,8 @@ import subprocess
 import difflib
 import gzip
 import datetime
+import runall
+import os.path
 
 
 
@@ -32,11 +34,10 @@ def reverseComplement(seq):
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='A program to correct barcodes and report edit distance in scATAC-seq analysis.')
-	parser.add_argument('-F','--forwardin', help='First fastq input file', dest='forwardin', required=True)
-	parser.add_argument('-R','--reversein', help='Second fastq input file', dest='reversein', required=True)
-	parser.add_argument('-O','--outdir', help='Output directory', dest='outdir', required=True)
-	parser.add_argument('-o','--outfile', help='Output file prefix, otherwise default(out)', default = "out", dest='outfile')
-	parser.add_argument('--version', action='version', version='%(prog)s 1.0')
+	#parser.add_argument('-F','--forwardin', help='First fastq input file', dest='forwardin', required=True)
+	#parser.add_argument('-R','--reversein', help='Second fastq input file', dest='reversein', required=True)
+	#parser.add_argument('-O','--outdir', help='Output directory', dest='outdir', required=True)
+	#parser.add_argument('-o','--outfile', help='Output file prefix, otherwise default(out)', default = "out", dest='outfile')
 	parser.add_argument('-E','--maxedit', help='Maximum allowed edit distance (default = 3)', default=3, dest='maxedit')
 	args = parser.parse_args()
 
@@ -49,21 +50,23 @@ if __name__ == '__main__':
 	nex_i5 = ["TATAGCCT","ATAGAGGC","CCTATCCT","GGCTCTGA","AGGCGAAG","TAATCTTA","CAGGACGT","GTACTGAC"]
 
 
-	log = open(log.txt, 'a')
+	log = open(os.path.join(runall.OUTPUT_PATH, 'log.txt', 'a'))
 	log_mes = print('{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now())) + " Starting processing\n"
 	log.write(log_mes)
 	
-if 'x' in ['x']:
-	with gzip.open(outdir + outfile + 'split.1.fq.gz', 'wb') as o:
+	output1 = os.path.join(runall.OUTPUT_PATH, runall.OUTPUT_PREFIX, 'split.1.fq.gz')
+	output2 = os.path.join(runall.OUTPUT_PATH, runall.OUTPUT_PREFIX, 'split.2.fq.gz')
+
+	with gzip.open(runall.BAR_OUT1, 'wb') as o:
 		o.write('')
-	with gzip.open(outdir + outfile + 'split.2.fq.gz', 'wb') as g:
+	with gzip.open(runall.BAR_OUT2, 'wb') as g:
 		g.write('')
 
 
 	count = 0
 	kept = 0
-	with gzip.open(forwardin, 'rb') as f:
-		with gzip.open(reversein, 'rb') as r:
+	with gzip.open(runall.CLEAN_R1, 'rb') as f:
+		with gzip.open(runall.CLEAN_R2, 'rb') as r:
 			for tag_line in f:
 				tag_line = tag_line.strip('@0123456789:\n')
 				count += 1
@@ -89,9 +92,9 @@ if 'x' in ['x']:
 					kept += 1
 					content = '@' + cor_barcode + ':' + str(count) + '#' + str(edit_dist) + '/1' + '\n' + read_line + plus_line + qual_line
 					content2 = '@' + cor_barcode + ':' + str(count) + '#' + str(edit_dist) + '/1' + '\n' + read_line2 + plus_line2 + qual_line2
-					with gzip.open(outdir + outfile + 'split.1.fq.gz', 'ab') as o:
+					with gzip.open(runall.BAR_OUT1, 'ab') as o:
 						o.write(content)
-					with gzip.open(outdir + outfile + 'split.2.fq.gz', 'ab') as g:
+					with gzip.open(runall.BAR_OUT2, 'ab') as g:
 						g.write(content2)
 
 
