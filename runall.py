@@ -22,7 +22,6 @@ TRIMMOMATIC = os.path.join(PIPELINE_PATH, 'Trimmomatic-0.36/trimmomatic-0.36.jar
 
 COMMANDS_TO_ARRAY_JOB_SCRIPT = os.path.join(PIPELINE_PATH, 'commands2arrayjob.sh')
 
-CLEAN_R1 = 'clean_R1.fq.gz'
 SGE_LOGS_DIRECTORY = 'sge_logs'
 SGE_CONFIGURATION = '-b y -shell y -cwd -j y -o %s -e %s' % (SGE_LOGS_DIRECTORY, SGE_LOGS_DIRECTORY)
 
@@ -70,7 +69,7 @@ if __name__ == '__main__':
 	print "Cleaning and fixing barcodes..."
 
 	if not os.path.exists(bar_out1) or args.force_overwrite_all or args.force_overwrite_barcodecorrect:
-		subprocess.call('python %s -E %s -o %s' % (BARCODE_CORRECTER, args.maxedit), shell=True)
+		subprocess.call('python %s -F %s -o %s -E %s' % (BARCODE_CORRECTER, FASTQ_DIRECTORY, OUTPUT_PREFIX, args.maxedit), shell=True)
 	else:
 		print 'Barcodes already fixed, skipping fix barcodes. Specify --force_overwrite_all or --force_overwrite_barcodecorrect to redo.'
 	
