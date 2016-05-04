@@ -18,6 +18,9 @@ parser.add_argument('-P','--prefix',help='Output file prefix',dest='prefix')
 parser.add_argument('-E','--maxedit', help='Maximum allowed edit distance (default = 3)', default=3, dest='maxedit')
 parser.add_argument('--force_overwrite_all', action='store_true', help='Force overwrite of all steps of pipeline regardless of files already present.')
 parser.add_argument('--force_overwrite_bcl2fastq', action='store_true', help='Force overwrite bcl2fastq regardless of files already present.')
+parser.add_argument('--force_overwrite_cleanfastq', action='store_true', help='Force overwrite fastq cleaning regardless of files already present.')
+parser.add_argument('--force_overwrite_barcodecorrect', action='store_true', help='Force overwrite barcode correction regardless of files already present.')
+parser.add_argument('--force_overwrite_trimming', action='store_true', help='Force overwrite trimming regardless of files already present.')
 args = parser.parse_args()
 
 # Construct paths to pipeline scripts as constants
@@ -76,7 +79,7 @@ if __name__ == '__main__':
 	initialize_directories(args.outdir)
 
 	# Submit bcl2fastq only if no existing results or if user wants to overwrite
-	if len(os.listdir(FASTQ_DIRECTORY)) == 0 or args.force_overwrite_all or args.force_overwrite_quantification:
+	if len(os.listdir(FASTQ_DIRECTORY)) == 0 or args.force_overwrite_all or args.force_overwrite_bcl2fastq:
 		print 'Starting bcl2fastq...'
 		bcl2fastq_command = 'module load modules modules-init modules-gs bcl2fastq/2.16 fastqc/0.10.1; bcl2fastq --runfolder-dir %s -o %s --ignore-missing-filter' % (args.rundir, FASTQ_DIRECTORY)  
 		subprocess.call(bcl2fastq_command, shell=True)
@@ -85,31 +88,40 @@ if __name__ == '__main__':
 	
 	print "Cleaning fastq files..."
 
-	fastq_files = [f for f in os.listdir(FASTQ_DIRECTORY) if os.path.isfile(os.path.join(FASTQ_DIRECTORY, f))]
+	if not os.path.exits(CLEAN_R1)) or args.force_overwrite_all or args.force_overwrite_cleanfastq:
+		fastq_files = [f for f in os.listdir(FASTQ_DIRECTORY) if os.path.isfile(os.path.join(FASTQ_DIRECTORY, f))]
 	
-	R1_files = [f for f in fastq_files if 'R1' in f]
-	clean_fastqs(R1_files, CLEAN_R1)
+		R1_files = [f for f in fastq_files if 'R1' in f]
+		clean_fastqs(R1_files, CLEAN_R1)
 	
-	R2_files = [f for f in fastq_files if 'R2' in f]
-	clean_fastqs(R2_files, CLEAN_R2)
-
+		R2_files = [f for f in fastq_files if 'R2' in f]
+		clean_fastqs(R2_files, CLEAN_R2)
+	else:
+		print 'Cleaned fastqs exist, skipping clean fastq. Specify --force_overwrite_all or --force_overwrite_cleanfastq to redo.'
+	
 
 	print "Fixing barcodes..."
 
-	subprocess.call('python %s -E %s ' % (BARCODE_CORRECTER, args.maxedit), shell=True)
+	if not os.path.exits(BAR_OUT1)) or args.force_overwrite_all or args.force_overwrite_barcodecorrect:
+		subprocess.call('python %s -E %s ' % (BARCODE_CORRECTER, args.maxedit), shell=True)
 
+	else:
+		print 'Barcodes already fixed, skipping fix barcodes. Specify --force_overwrite_all or --force_overwrite_barcodecorrect to redo.'
+	
 	print "Trimming adapters..."
 
 	trimmer_out1 = os.path.join(OUTPUT_PATH, OUTPUT_PREFIX, '.split.1.trimmed.paired.fastq.gz')
 	trimmer_out2 = os.path.join(OUTPUT_PATH, OUTPUT_PREFIX, '.split.2.trimmed.paired.fastq.gz')
 	trimmer_un_out1 = os.path.join(OUTPUT_PATH, OUTPUT_PREFIX, '.split.1.trimmed.unpaired.fastq.gz')
 	trimmer_un_out2 = os.path.join(OUTPUT_PATH, OUTPUT_PREFIX, '.split.2.trimmed.unpaired.fastq.gz')
-
 	
-	trimmer_command = 'java -Xmx1G -jar %s PE %s %s %s %s %s %s ILLUMINACLIP:%sTrimmomatic-0.36/adapters/NexteraPE-PE.fa:2:30:10:1:true MINLEN:20' % \
-		(TRIMMOMATIC, BAR_OUT1, BAR_OUT2, trimmer_out1, trimmer_un_out1, trimmer_out2, trimmer_un_out2, PIPELINE_PATH)
- 
-	subprocess.call(trimmer_command, shell=True)
+	if not os.path.exits(trimmer_out1)) or args.force_overwrite_all or args.force_overwrite_trimming:
+		trimmer_command = 'java -Xmx1G -jar %s PE %s %s %s %s %s %s ILLUMINACLIP:%sTrimmomatic-0.36/adapters/NexteraPE-PE.fa:2:30:10:1:true MINLEN:20' % \
+			(TRIMMOMATIC, BAR_OUT1, BAR_OUT2, trimmer_out1, trimmer_un_out1, trimmer_out2, trimmer_un_out2, PIPELINE_PATH)
+
+		subprocess.call(trimmer_command, shell=True)
+	else:
+		print 'Sequences already trimmed, skipping trimming. Specify --force_overwrite_all or --force_overwrite_trimming to redo.'
 
 	print "Cleaning up..."
 
