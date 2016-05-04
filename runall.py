@@ -48,7 +48,7 @@ BAR_OUT1 = os.path.join(OUTPUT_PATH, OUTPUT_PREFIX, 'split.1.fq.gz')
 BAR_OUT2 = os.path.join(OUTPUT_PATH, OUTPUT_PREFIX, 'split.2.fq.gz')
 
 def initialize_directories(pipeline_root_directory):
-	fastqs = os.path.abspath(FASTQ_DIRECTORY)
+	fastqs = FASTQ_DIRECTORY
 	sge_logs = os.path.join(pipeline_root_directory, SGE_LOGS_DIRECTORY)
 
 	
@@ -59,7 +59,7 @@ def initialize_directories(pipeline_root_directory):
 def clean_fastqs(file_list, outfile):
 	fastqdic = {'@':'winner'}
 	for ifile in file_list:
-		with gzip.open(FASTQ_DIRECTORY + ifile,  'rb') as f:
+		with gzip.open(os.path.join(FASTQ_DIRECTORY,ifile),  'rb') as f:
 			z = 1
 			for line in f:
 				try:
@@ -82,13 +82,14 @@ if __name__ == '__main__':
 	if len(os.listdir(FASTQ_DIRECTORY)) == 0 or args.force_overwrite_all or args.force_overwrite_bcl2fastq:
 		print 'Starting bcl2fastq...'
 		bcl2fastq_command = 'module load modules modules-init modules-gs bcl2fastq/2.16 fastqc/0.10.1; bcl2fastq --runfolder-dir %s -o %s --ignore-missing-filter' % (args.rundir, FASTQ_DIRECTORY)  
-		subprocess.call(bcl2fastq_command, shell=True)
+		f = open(os.path.join(OUTPUT_PATH, "bcl2fastq_log.txt"), 'w')
+		subprocess.call(bcl2fastq_command, shell=True, stdout = f, stderr=f)
 	else:
 		print 'fastq directory is not empty, skipping bcl2fastq. Specify --force_overwrite_all or --force_overwrite_bcl2fastq to redo.'
 	
 	print "Cleaning fastq files..."
 
-	if not os.path.exits(CLEAN_R1)) or args.force_overwrite_all or args.force_overwrite_cleanfastq:
+	if not os.path.exists(CLEAN_R1) or args.force_overwrite_all or args.force_overwrite_cleanfastq:
 		fastq_files = [f for f in os.listdir(FASTQ_DIRECTORY) if os.path.isfile(os.path.join(FASTQ_DIRECTORY, f))]
 	
 		R1_files = [f for f in fastq_files if 'R1' in f]
@@ -102,7 +103,7 @@ if __name__ == '__main__':
 
 	print "Fixing barcodes..."
 
-	if not os.path.exits(BAR_OUT1)) or args.force_overwrite_all or args.force_overwrite_barcodecorrect:
+	if not os.path.exists(BAR_OUT1) or args.force_overwrite_all or args.force_overwrite_barcodecorrect:
 		subprocess.call('python %s -E %s ' % (BARCODE_CORRECTER, args.maxedit), shell=True)
 
 	else:
@@ -115,7 +116,7 @@ if __name__ == '__main__':
 	trimmer_un_out1 = os.path.join(OUTPUT_PATH, OUTPUT_PREFIX, '.split.1.trimmed.unpaired.fastq.gz')
 	trimmer_un_out2 = os.path.join(OUTPUT_PATH, OUTPUT_PREFIX, '.split.2.trimmed.unpaired.fastq.gz')
 	
-	if not os.path.exits(trimmer_out1)) or args.force_overwrite_all or args.force_overwrite_trimming:
+	if not os.path.exists(trimmer_out1) or args.force_overwrite_all or args.force_overwrite_trimming:
 		trimmer_command = 'java -Xmx1G -jar %s PE %s %s %s %s %s %s ILLUMINACLIP:%sTrimmomatic-0.36/adapters/NexteraPE-PE.fa:2:30:10:1:true MINLEN:20' % \
 			(TRIMMOMATIC, BAR_OUT1, BAR_OUT2, trimmer_out1, trimmer_un_out1, trimmer_out2, trimmer_un_out2, PIPELINE_PATH)
 
