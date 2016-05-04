@@ -16,6 +16,7 @@ import gzip
 import datetime
 import runall
 import os.path
+import multiprocessing
 
 
 
@@ -30,12 +31,47 @@ def reverseComplement(seq):
 	seq_dict = {'A':'T','T':'A','G':'C','C':'G','N':'N'}
 	return "".join([seq_dict[base] for base in reversed(seq)])
 
+def clean_and_correct(ifile):
+	fileR1 = ifile
+	fileR2 = ifile.replace('1', '2', 1])
+	kept = 0
+	with gzip.open(os.path.join(fastqpath, fileR1), 'rb') as f:
+		with gzip.open(os.path.join(fastqpath, fileR2), 'rb') as r:
+			for tag_line in f:
+				tag_line = tag_line.strip().split()[1].split(':')[3].replace('+','')
+				read_line = next(f)
+				plus_line = next(f)
+				qual_line = next(f)
+				b1 = tag_line[0:8]
+				b2 = tag_line[8:18]
+				b4 = reverseComplement(tag_line[18:26])
+				b3 = reverseComplement(tag_line[26:36])
+				b1_cor = difflib.get_close_matches(b1, nex_i7, 1)
+				b2_cor = difflib.get_close_matches(b2, pcr_i7, 1)
+				b3_cor = difflib.get_close_matches(b3, pcr_i5, 1)
+				b4_cor = difflib.get_close_matches(b4, nex_i5, 1)
+				cor_barcode = ''.join(b1_cor + b2_cor + b3_cor + b4_cor)
+				tag_new = ''.join(b1 + b2 + b3 + b4)
+				edit_dist = ed(cor_barcode, tag_new)
+				tag_line2 = next(r)
+				read_line2 = next(r)
+				plus_line2 = next(r)
+				qual_line2 = next(r)
+				if edit_dist <= args.maxedit:
+					kept += 1
+					content = '@' + cor_barcode + ':' + str(count) + '#' + str(edit_dist) + '/1' + '\n' + read_line + plus_line + qual_line
+					content2 = '@' + cor_barcode + ':' + str(count) + '#' + str(edit_dist) + '/1' + '\n' + read_line2 + plus_line2 + qual_line2
+					with gzip.open(fileR1 + '.out.fq.gz', 'ab') as o:
+						o.write(content)
+					with gzip.open(fileR2 + '.out.fq.gz', 'ab') as g:
+						g.write(content2)
+	return kept
 
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='A program to correct barcodes and report edit distance in scATAC-seq analysis.')
 	#parser.add_argument('-F','--forwardin', help='First fastq input file', dest='forwardin', required=True)
-	#parser.add_argument('-R','--reversein', help='Second fastq input file', dest='reversein', required=True)
+	parser.add_argument('-n','--numthreads', help='Number of threads available', dest='numthreads', required=True)
 	parser.add_argument('-F','--fastqpath', help='Path for fastqs path', dest='fastqpath', required=True)
 	parser.add_argument('-o','--outpref', help='Output file prefix, otherwise default(out)', default = "out", dest='outpref')
 	parser.add_argument('-E','--maxedit', help='Maximum allowed edit distance (default = 3)', default=3, dest='maxedit')
@@ -68,44 +104,31 @@ if __name__ == '__main__':
 	R1_files = [f for f in fastq_files if 'R1' in f]
 	R2_files = [f for f in fastq_files if 'R2' in f]
 
-	count = 0
-	kept = 0
-
+    file_count = 0
+    file_names1 = []
 	for i in range(len(R1_files)):
-		with gzip.open(os.path.join(fastqpath, R1_files[i]), 'rb') as f:
-			with gzip.open(os.path.join(fastqpath, R2_files[i]), 'rb') as r:
-				for tag_line in f:
-					tag_line = tag_line.strip().split()[1].split(':')[3].replace('+','')
-					count += 1
-					read_line = next(f)
-					plus_line = next(f)
-					qual_line = next(f)
-					b1 = tag_line[0:8]
-					b2 = tag_line[8:18]
-					b4 = reverseComplement(tag_line[18:26])
-					b3 = reverseComplement(tag_line[26:36])
-					b1_cor = difflib.get_close_matches(b1, nex_i7, 1)
-					b2_cor = difflib.get_close_matches(b2, pcr_i7, 1)
-					b3_cor = difflib.get_close_matches(b3, pcr_i5, 1)
-					b4_cor = difflib.get_close_matches(b4, nex_i5, 1)
-					cor_barcode = ''.join(b1_cor + b2_cor + b3_cor + b4_cor)
-					tag_new = ''.join(b1 + b2 + b3 + b4)
-					edit_dist = ed(cor_barcode, tag_new)
-					tag_line2 = next(r)
-					read_line2 = next(r)
-					plus_line2 = next(r)
-					qual_line2 = next(r)
-					if edit_dist <= args.maxedit:
-						kept += 1
-						content = '@' + cor_barcode + ':' + str(count) + '#' + str(edit_dist) + '/1' + '\n' + read_line + plus_line + qual_line
-						content2 = '@' + cor_barcode + ':' + str(count) + '#' + str(edit_dist) + '/1' + '\n' + read_line2 + plus_line2 + qual_line2
-						with gzip.open(output1, 'ab') as o:
-							o.write(content)
-						with gzip.open(output2, 'ab') as g:
-							g.write(content2)
+		with gzip.open(os.path.join(fastqpath, R1_files[i]), 'rb') as inp:
+			while True:
+				file_count += 1
+				file_names1.append(os.path.join(fastqpath,'tempslice1' + str(file_count)))
+				with gzip.open(os.path.join(fastqpath,'tempslice1' + str(file_count)),'wb') as outp:
+      				outp.write(inp.read(100000))
+      				if inp.eof:
+                		break
+
+	for i in range(len(R2_files)):
+		with gzip.open(os.path.join(fastqpath, R2_files[i]), 'rb') as inp:
+			while True:
+				with gzip.open(os.path.join(fastqpath,'tempslice2' + str(file_count)),'wb') as outp:
+      				outp.write(inp.read(100000))
+      				if inp.eof:
+                		break
 
 
-	log_mes = "Sequences processed: " + str(count)  + "\nSequences kept: " + str(kept) + " " + str(kept/float(count)) + " %" 
+	pool = multiprocessing.Pool(processes=numthreads)
+	kept_list = pool.map(clean_and_correct, file_names1)
+
+	log_mes = "\nSequences kept: " + str(sum(kept_list))  
 	log.write(log_mes)
 
 	log_mes = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) + ' Done\n'
