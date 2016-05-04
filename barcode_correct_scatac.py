@@ -36,8 +36,8 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='A program to correct barcodes and report edit distance in scATAC-seq analysis.')
 	#parser.add_argument('-F','--forwardin', help='First fastq input file', dest='forwardin', required=True)
 	#parser.add_argument('-R','--reversein', help='Second fastq input file', dest='reversein', required=True)
-	#parser.add_argument('-O','--outdir', help='Output directory', dest='outdir', required=True)
-	#parser.add_argument('-o','--outfile', help='Output file prefix, otherwise default(out)', default = "out", dest='outfile')
+	#parser.add_argument('-O','--outpath', help='Output path', dest='outpath', required=True)
+	parser.add_argument('-o','--outpref', help='Output file prefix, otherwise default(out)', default = "out", dest='outpref')
 	parser.add_argument('-E','--maxedit', help='Maximum allowed edit distance (default = 3)', default=3, dest='maxedit')
 	args = parser.parse_args()
 
@@ -50,17 +50,18 @@ if __name__ == '__main__':
 	nex_i5 = ["TATAGCCT","ATAGAGGC","CCTATCCT","GGCTCTGA","AGGCGAAG","TAATCTTA","CAGGACGT","GTACTGAC"]
 
 
-	log = open(os.path.join(runall.OUTPUT_PATH, 'log.txt', 'a'))
+	log = open(outpref + 'barcode_correct_log.txt', 'a')
 	log_mes = print('{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now())) + " Starting processing\n"
 	log.write(log_mes)
 	
-	output1 = os.path.join(runall.OUTPUT_PATH, runall.OUTPUT_PREFIX, 'split.1.fq.gz')
-	output2 = os.path.join(runall.OUTPUT_PATH, runall.OUTPUT_PREFIX, 'split.2.fq.gz')
+	output1 = outpref + 'split.1.fq.gz')
+	output2 = outpref + 'split.2.fq.gz')
 
-	with gzip.open(runall.BAR_OUT1, 'wb') as o:
+	with gzip.open(output1, 'wb') as o:
 		o.write('')
-	with gzip.open(runall.BAR_OUT2, 'wb') as g:
+	with gzip.open(output2, 'wb') as g:
 		g.write('')
+
 
 	count = 0
 	kept = 0
@@ -91,9 +92,9 @@ if __name__ == '__main__':
 					kept += 1
 					content = '@' + cor_barcode + ':' + str(count) + '#' + str(edit_dist) + '/1' + '\n' + read_line + plus_line + qual_line
 					content2 = '@' + cor_barcode + ':' + str(count) + '#' + str(edit_dist) + '/1' + '\n' + read_line2 + plus_line2 + qual_line2
-					with gzip.open(runall.BAR_OUT1, 'ab') as o:
+					with gzip.open(output1, 'ab') as o:
 						o.write(content)
-					with gzip.open(runall.BAR_OUT2, 'ab') as g:
+					with gzip.open(output2, 'ab') as g:
 						g.write(content2)
 
 
