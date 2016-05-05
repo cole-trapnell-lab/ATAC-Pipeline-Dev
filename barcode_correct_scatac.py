@@ -106,26 +106,33 @@ if __name__ == '__main__':
 	print 'starting file split'
 	file_count = 0
 	file_names1 = []
+	line_count = 0
 	for i in range(len(R1_files)):
+		print 'processing file1 %s' i
 		with gzip.open(os.path.join(args.fastqpath, R1_files[i]), 'rb') as inp:
-			while True:
-				file_count += 1
-				file_names1.append(os.path.join(args.fastqpath,'tempslice1' + str(file_count)))
-				with gzip.open(os.path.join(args.fastqpath,'tempslice1' + str(file_count)),'wb') as outp:
-					chunk = inp.read(10000000)
-      					if chunk == '':
-                				break
-      					outp.write(chunk)
-      				
+			outp = gzip.open(os.path.join(args.fastqpath,'tempslice1.' + str(file_count) + '.fq.gz'),'wb')
+			for line in inp:
+				outp.write(line)
+				line_count += 1
+				if line_count%1000000:
+					outp.close()
+					outp = gzip.open(os.path.join(args.fastqpath,'tempslice1.' + str(file_count)),'wb')
+					file_count += 1
+			outp.close()
+   				
 	print 'done file split 1'
 	for i in range(len(R2_files)):
+		print 'processing file2 %s' i
 		with gzip.open(os.path.join(args.fastqpath, R2_files[i]), 'rb') as inp:
-			while True:
-				with gzip.open(os.path.join(args.fastqpath,'tempslice2' + str(file_count)),'wb') as outp:
-                                        chunk = inp.read(10000000)
-					if chunk == '':
-                                        	break
-                                	outp.write(chunk)      					
+			outp = gzip.open(os.path.join(args.fastqpath,'tempslice2.' + str(file_count) + '.fq.gz'),'wb')
+			for line in inp:
+				outp.write(line)
+				line_count += 1
+				if line_count%1000000:
+					outp.close()
+					outp = gzip.open(os.path.join(args.fastqpath,'tempslice2.' + str(file_count)),'wb')
+					file_count += 1
+			outp.close()     					
 
 	print 'done file split 2'
 	pool = multiprocessing.Pool(processes=numthreads)
