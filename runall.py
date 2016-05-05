@@ -26,7 +26,7 @@ SGE_LOGS_DIRECTORY = 'sge_logs'
 SGE_CONFIGURATION = '-b y -shell y -cwd -j y -o %s -e %s' % (SGE_LOGS_DIRECTORY, SGE_LOGS_DIRECTORY)
 
 def initialize_directories(pipeline_root_directory):
-	fastqs = FASTQ_DIRECTORY
+	fastqs = os.path.join(args.outdir, 'fastqs')
 	sge_logs = os.path.join(pipeline_root_directory, SGE_LOGS_DIRECTORY)
 
 	
@@ -67,18 +67,18 @@ if __name__ == '__main__':
 		print 'fastq directory is not empty, skipping bcl2fastq. Specify --force_overwrite_all or --force_overwrite_bcl2fastq to redo.'
 
 	print "Cleaning and fixing barcodes..."
-
+	print FASTQ_DIRECTORY
 	if not os.path.exists(bar_out1) or args.force_overwrite_all or args.force_overwrite_barcodecorrect:
-		subprocess.call('python %s -F %s -o %s -E %s' % (BARCODE_CORRECTER, FASTQ_DIRECTORY, OUTPUT_PREFIX, args.maxedit), shell=True)
+		subprocess.call('python %s -F %s -o %s -E %s -n 10' % (BARCODE_CORRECTER, FASTQ_DIRECTORY, OUTPUT_PREFIX, args.maxedit), shell=True)
 	else:
 		print 'Barcodes already fixed, skipping fix barcodes. Specify --force_overwrite_all or --force_overwrite_barcodecorrect to redo.'
 	
 	print "Trimming adapters..."
 
 	trimmer_out1 = OUTPUT_PREFIX + '.split.1.trimmed.paired.fastq.gz'
-	trimmer_out2 = OUTPUT_PREFIX + '.split.2.trimmed.paired.fastq.gz')
-	trimmer_un_out1 = OUTPUT_PREFIX + '.split.1.trimmed.unpaired.fastq.gz')
-	trimmer_un_out2 = OUTPUT_PREFIX + '.split.2.trimmed.unpaired.fastq.gz')
+	trimmer_out2 = OUTPUT_PREFIX + '.split.2.trimmed.paired.fastq.gz'
+	trimmer_un_out1 = OUTPUT_PREFIX + '.split.1.trimmed.unpaired.fastq.gz'
+	trimmer_un_out2 = OUTPUT_PREFIX + '.split.2.trimmed.unpaired.fastq.gz'
 	
 	if not os.path.exists(trimmer_out1) or args.force_overwrite_all or args.force_overwrite_trimming:
 		trimmer_command = 'java -Xmx1G -jar %s PE %s %s %s %s %s %s ILLUMINACLIP:%sTrimmomatic-0.36/adapters/NexteraPE-PE.fa:2:30:10:1:true MINLEN:20' % \

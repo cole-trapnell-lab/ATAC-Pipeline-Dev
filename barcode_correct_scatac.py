@@ -33,7 +33,7 @@ def reverseComplement(seq):
 
 def clean_and_correct(ifile):
 	fileR1 = ifile
-	fileR2 = ifile.replace('1', '2', 1])
+	fileR2 = ifile.replace('1', '2', 1)
 	kept = 0
 	with gzip.open(os.path.join(fastqpath, fileR1), 'rb') as f:
 		with gzip.open(os.path.join(fastqpath, fileR2), 'rb') as r:
@@ -92,26 +92,26 @@ if __name__ == '__main__':
 	log.write(log_mes)
 	
 	# Open output files
-	output1 = outpref + 'split.1.fq.gz')
-	output2 = outpref + 'split.2.fq.gz')
+	output1 = args.outpref + 'split.1.fq.gz'
+	output2 = args.outpref + 'split.2.fq.gz'
 	with gzip.open(output1, 'wb') as o:
 		o.write('')
 	with gzip.open(output2, 'wb') as g:
 		g.write('')
 
 	# Collect fastqs
-	fastq_files = [f for f in os.listdir(fastqpath) if os.path.isfile(os.path.join(fastqpath, f))]	
+	fastq_files = [f for f in os.listdir(args.fastqpath) if os.path.isfile(os.path.join(args.fastqpath, f))]	
 	R1_files = [f for f in fastq_files if 'R1' in f]
 	R2_files = [f for f in fastq_files if 'R2' in f]
-
-    file_count = 0
-    file_names1 = []
+	
+	file_count = 0
+	file_names1 = []
 	for i in range(len(R1_files)):
-		with gzip.open(os.path.join(fastqpath, R1_files[i]), 'rb') as inp:
+		with gzip.open(os.path.join(args.fastqpath, R1_files[i]), 'rb') as inp:
 			while True:
 				file_count += 1
-				file_names1.append(os.path.join(fastqpath,'tempslice1' + str(file_count)))
-				with gzip.open(os.path.join(fastqpath,'tempslice1' + str(file_count)),'wb') as outp:
+				file_names1.append(os.path.join(args.fastqpath,'tempslice1' + str(file_count)))
+				with gzip.open(os.path.join(args.fastqpath,'tempslice1' + str(file_count)),'wb') as outp:
 					chunk = inp.read(100000)
       				if chunk == '':
                 		break
@@ -119,13 +119,12 @@ if __name__ == '__main__':
       				
 
 	for i in range(len(R2_files)):
-		with gzip.open(os.path.join(fastqpath, R2_files[i]), 'rb') as inp:
+		with gzip.open(os.path.join(args.fastqpath, R2_files[i]), 'rb') as inp:
 			while True:
-				with gzip.open(os.path.join(fastqpath,'tempslice2' + str(file_count)),'wb') as outp:
-					chunk = inp.read(100000)
-					if chunk == '':
-                		break
-      				outp.write(chunk)
+				with gzip.open(os.path.join(args.fastqpath,'tempslice2' + str(file_count)),'wb') as outp:
+      					outp.write(inp.read(100000))
+      					if inp.eof:
+                				break
 
 
 
