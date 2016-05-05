@@ -87,10 +87,10 @@ if __name__ == '__main__':
 	nex_i5 = ["TATAGCCT","ATAGAGGC","CCTATCCT","GGCTCTGA","AGGCGAAG","TAATCTTA","CAGGACGT","GTACTGAC"]
 
 	# Open barcode correction log
-	log = open(outpref + 'barcode_correct_log.txt', 'a')
+	log = open(args.outpref + 'barcode_correct_log.txt', 'a')
 	log_mes = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) + ' Starting processing\n'
-	log.write(log_mes)
-	
+	log.write(str(log_mes))
+	print log_mes
 	# Open output files
 	output1 = args.outpref + 'split.1.fq.gz'
 	output2 = args.outpref + 'split.2.fq.gz'
@@ -103,7 +103,7 @@ if __name__ == '__main__':
 	fastq_files = [f for f in os.listdir(args.fastqpath) if os.path.isfile(os.path.join(args.fastqpath, f))]	
 	R1_files = [f for f in fastq_files if 'R1' in f]
 	R2_files = [f for f in fastq_files if 'R2' in f]
-	
+	print 'starting file split'
 	file_count = 0
 	file_names1 = []
 	for i in range(len(R1_files)):
@@ -112,22 +112,22 @@ if __name__ == '__main__':
 				file_count += 1
 				file_names1.append(os.path.join(args.fastqpath,'tempslice1' + str(file_count)))
 				with gzip.open(os.path.join(args.fastqpath,'tempslice1' + str(file_count)),'wb') as outp:
-					chunk = inp.read(100000)
-      				if chunk == '':
-                		break
-      				outp.write(chunk)
+					chunk = inp.read(10000000)
+      					if chunk == '':
+                				break
+      					outp.write(chunk)
       				
-
+	print 'done file split 1'
 	for i in range(len(R2_files)):
 		with gzip.open(os.path.join(args.fastqpath, R2_files[i]), 'rb') as inp:
 			while True:
 				with gzip.open(os.path.join(args.fastqpath,'tempslice2' + str(file_count)),'wb') as outp:
-      					outp.write(inp.read(100000))
-      					if inp.eof:
-                				break
+                                        chunk = inp.read(10000000)
+					if chunk == '':
+                                        	break
+                                	outp.write(chunk)      					
 
-
-
+	print 'done file split 2'
 	pool = multiprocessing.Pool(processes=numthreads)
 	kept_list = pool.map(clean_and_correct, file_names1)
 
