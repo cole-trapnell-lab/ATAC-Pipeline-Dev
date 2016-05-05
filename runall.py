@@ -67,9 +67,9 @@ if __name__ == '__main__':
 		print 'fastq directory is not empty, skipping bcl2fastq. Specify --force_overwrite_all or --force_overwrite_bcl2fastq to redo.'
 
 	print "Cleaning and fixing barcodes..."
-
+	print FASTQ_DIRECTORY
 	if not os.path.exists(bar_out1) or args.force_overwrite_all or args.force_overwrite_barcodecorrect:
-		subprocess.call('python %s -F %s -o %s -E %s' % (BARCODE_CORRECTER, FASTQ_DIRECTORY, OUTPUT_PREFIX, args.maxedit), shell=True)
+		subprocess.call('python %s -F %s -o %s -E %s -n 10' % (BARCODE_CORRECTER, FASTQ_DIRECTORY, OUTPUT_PREFIX, args.maxedit), shell=True)
 	else:
 		print 'Barcodes already fixed, skipping fix barcodes. Specify --force_overwrite_all or --force_overwrite_barcodecorrect to redo.'
 	
