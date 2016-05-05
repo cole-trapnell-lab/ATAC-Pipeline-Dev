@@ -112,17 +112,21 @@ if __name__ == '__main__':
 				file_count += 1
 				file_names1.append(os.path.join(fastqpath,'tempslice1' + str(file_count)))
 				with gzip.open(os.path.join(fastqpath,'tempslice1' + str(file_count)),'wb') as outp:
-      				outp.write(inp.read(100000))
-      				if inp.eof:
+					chunk = inp.read(100000)
+      				if chunk == '':
                 		break
+      				outp.write(chunk)
+      				
 
 	for i in range(len(R2_files)):
 		with gzip.open(os.path.join(fastqpath, R2_files[i]), 'rb') as inp:
 			while True:
 				with gzip.open(os.path.join(fastqpath,'tempslice2' + str(file_count)),'wb') as outp:
-      				outp.write(inp.read(100000))
-      				if inp.eof:
+					chunk = inp.read(100000)
+					if chunk == '':
                 		break
+      				outp.write(chunk)
+
 
 
 	pool = multiprocessing.Pool(processes=numthreads)
