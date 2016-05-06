@@ -19,7 +19,9 @@ import os.path
 import multiprocessing
 import glob
 from operator import itemgetter
-
+import operator
+import imap
+from itertools import imap
 
 # Standard nextera barcodes
 NEX_I7 = ["ATTACTCG","TCCGGAGA","CGCTCATT","GAGATTCC","ATTCAGAA","GAATTCGT","CTGAAGCT","TAATGCGC","CGGCTATG","TCCGCGAA","TCTCGCGC","AGCGATAG"]
@@ -30,20 +32,16 @@ PCR_I5 = ["CTCCATCGAG","TTGGTAGTCG","GGCCGTCAAC","CCTAGACGAG","TCGTTAGAGC","CGTT
 
 NEX_I5 = ["TATAGCCT","ATAGAGGC","CCTATCCT","GGCTCTGA","AGGCGAAG","TAATCTTA","CAGGACGT","GTACTGAC"]
 
-def ed(string1, string2):
-	edist = 0
-	for i in range(len(string1)):
-		if string1[i] != string2[i]:
-			edist += 1
-	return(edist)
-
 def hamming(str1, str2):
     ne = operator.ne
     return sum(imap(ne, str1, str2))
 
+#def split_files((i, file_list, fastqpath)):
+#	subprocess.call("gunzip -c %s | split -l 1000000 -d -a 4 - %s --filter='gzip > $FILE.gz'" % (os.path.join(fastqpath, file_list[i]), 'tempR1' + str(i) + '.fq'), shell=True)
+	
 def closest_match(str1, strlist):
 	all_h = [hamming(str1, s2) for s2 in strlist]
-	return min(enumerate(all_h), key=itemgetter(1))[0]
+	return strlist[min(enumerate(all_h), key=itemgetter(1))[0]]
 
 def reverseComplement(seq):
 	seq_dict = {'A':'T','T':'A','G':'C','C':'G','N':'N'}
@@ -56,46 +54,46 @@ def clean_and_correct((ifile, fastqpath)):
 	kept = 0
 	with gzip.open(os.path.join(fastqpath, fileR1), 'rb') as f:
 		with gzip.open(os.path.join(fastqpath, fileR2), 'rb') as r:
-			for tag_line in f:
-				tag_line = tag_line.strip().split()[1].split(':')[3].replace('+','')
-				read_line = next(f)
-				plus_line = next(f)
-				qual_line = next(f)
-				b1 = tag_line[0:8]
-				b2 = tag_line[8:18]
-				b4 = reverseComplement(tag_line[18:26])
-				b3 = reverseComplement(tag_line[26:36])
-				if b1 in NEX_I7:
-					b1_cor = [b1]
-				else:
-					b1_cor = difflib.get_close_matches(b1, NEX_I7, 1)
-				if b2 in PCR_I7:
-					b2_cor = [b2]
-				else:
-					b2_cor = difflib.get_close_matches(b2, PCR_I7, 1)
-				if b3 in PCR_I5:
-					b3_cor = [b3]
-				else:
-					b3_cor = difflib.get_close_matches(b3, PCR_I5, 1)
-				if b4 in NEX_I5:
-					b4_cor = [b4]
-				else:
-					b4_cor = difflib.get_close_matches(b4, NEX_I5, 1)
-				cor_barcode = ''.join(b1_cor + b2_cor + b3_cor + b4_cor)
-				tag_new = ''.join(b1 + b2 + b3 + b4)
-				edit_dist = ed(cor_barcode, tag_new)
-				tag_line2 = next(r)
-				read_line2 = next(r)
-				plus_line2 = next(r)
-				qual_line2 = next(r)
-				if edit_dist <= 3:
-					kept += 1
-					content = '@' + cor_barcode + ':' + str(count) + '#' + str(edit_dist) + '/1' + '\n' + read_line + plus_line + qual_line
-					content2 = '@' + cor_barcode + ':' + str(count) + '#' + str(edit_dist) + '/1' + '\n' + read_line2 + plus_line2 + qual_line2
-					with gzip.open(fileR1 + '.out.fq.gz', 'ab') as o:
-						o.write(content)
-					with gzip.open(fileR2 + '.out.fq.gz', 'ab') as g:
-						g.write(content2)
+			with gzip.open(fileR1 + '.out.fq.gz', 'ab') as o:
+				with gzip.open(fileR2 + '.out.fq.gz', 'ab') as g:
+					for tag_line in f:
+						tag_line = tag_line.strip().split()[1].split(':')[3].replace('+','')
+						read_line = next(f)
+						plus_line = next(f)
+						qual_line = next(f)
+						b1 = tag_line[0:8]
+						b2 = tag_line[8:18]
+						b4 = reverseComplement(tag_line[18:26])
+						b3 = reverseComplement(tag_line[26:36])
+						if b1 in NEX_I7:
+							b1_cor = [b1]
+						else:
+							b1_cor = difflib.get_close_matches(b1, NEX_I7)
+						if b2 in PCR_I7:
+							b2_cor = [b2]
+						else:
+							b2_cor = difflib.get_close_matches(b2, PCR_I7, 1)
+						if b3 in PCR_I5:
+							b3_cor = [b3]
+						else:
+							b3_cor = difflib.get_close_matches(b3, PCR_I5, 1)
+						if b4 in NEX_I5:
+							b4_cor = [b4]
+						else:
+							b4_cor = difflib.get_close_matches(b4, NEX_I5, 1)
+						cor_barcode = ''.join(b1_cor + b2_cor + b3_cor + b4_cor)
+						tag_new = ''.join(b1 + b2 + b3 + b4)
+						edit_dist = hamming(cor_barcode, tag_new)
+						tag_line2 = next(r)
+						read_line2 = next(r)
+						plus_line2 = next(r)
+						qual_line2 = next(r)
+						if edit_dist <= 3:
+							kept += 1
+							content = '@' + cor_barcode + ':' + str(count) + '#' + str(edit_dist) + '/1' + '\n' + read_line + plus_line + qual_line
+							content2 = '@' + cor_barcode + ':' + str(count) + '#' + str(edit_dist) + '/1' + '\n' + read_line2 + plus_line2 + qual_line2
+							o.write(content)
+							g.write(content2)
 	return kept
 
 
@@ -117,48 +115,38 @@ if __name__ == '__main__':
 	# Open output files
 	output1 = args.outpref + 'split.1.fq.gz'
 	output2 = args.outpref + 'split.2.fq.gz'
-	with gzip.open(output1, 'wb') as o:
-		o.write('')
-	with gzip.open(output2, 'wb') as g:
-		g.write('')
 
 	# Collect fastqs
 	fastq_files = [f for f in os.listdir(args.fastqpath) if os.path.isfile(os.path.join(args.fastqpath, f))]	
 	R1_files = [f for f in fastq_files if 'R1' in f]
 	R2_files = [f for f in fastq_files if 'R2' in f]
 	print 'starting file split'
-	file_count = 0
 	file_names1 = []
-	line_count = 0
 
 	pool = multiprocessing.Pool(processes=numthreads)
 
 	for i in range(len(R1_files)):
-		subprocess.call("gunzip -c %s | split -l 1000000 -d -a 4 - %s --filter='gzip > $FILE.gz'" % (os.path.join(args.fastqpath, R1_files[i]), 'tempR1' + str(i) + '.fq'), shell=True)
+		subprocess.call("gunzip -c %s | split -l 100000000 -d -a 4 - %s --filter='gzip > $FILE.gz'" % (os.path.join(args.fastqpath, R1_files[i]), 'tempR1' + str(i) + '.fq'), shell=True)
+	
+	print 'done file split 1'
 
    	file_names1 = glob.glob(fastqpath + 'tempR1*')			
-	print 'done file split 1'
-	for i in range(len(R2_files)):
-		print 'processing file2 %s' i
-		with gzip.open(os.path.join(args.fastqpath, R2_files[i]), 'rb') as inp:
-			outp = gzip.open(os.path.join(args.fastqpath,'tempslice2.' + str(file_count) + '.fq.gz'),'wb')
-			for line in inp:
-				outp.write(line)
-				line_count += 1
-				if line_count%1000000:
-					outp.close()
-					outp = gzip.open(os.path.join(args.fastqpath,'tempslice2.' + str(file_count)),'wb')
-					file_count += 1
-			outp.close()     					
-	
 
+	for i in range(len(R2_files)):
+		subprocess.call("gunzip -c %s | split -l 100000000 -d -a 4 - %s --filter='gzip > $FILE.gz'" % (os.path.join(args.fastqpath, R2_files[i]), 'tempR2' + str(i) + '.fq'), shell=True)
 	print 'done file split 2'
 
 	kept_list = pool.map(clean_and_correct, zip(file_names1,repeat(fastqpath)))
 
+	outfiles1 = [f + '.out.fq.gz' for f in file_names1]
+	
+	for f in outfiles1:
+		subprocess.call("cat %s >> %s" % (f, output1), shell=True)
+		f2 = f.replace('1', '2', 1)
+		subprocess.call("cat %s >> %s" % (f2, output2))
 
-
-	log_mes = "\nSequences kept: " + str(sum(kept_list))  
+	subprocess.call('rm tempR*', shell=True)
+	log_mes = "\nSequences kept: " + str(sum(kept_list), shell=True)  
 	log.write(log_mes)
 
 	log_mes = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) + ' Done\n'
