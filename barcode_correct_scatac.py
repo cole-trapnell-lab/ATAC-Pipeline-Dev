@@ -17,8 +17,18 @@ import datetime
 import runall
 import os.path
 import multiprocessing
+import glob
+from operator import itemgetter
 
 
+# Standard nextera barcodes
+NEX_I7 = ["ATTACTCG","TCCGGAGA","CGCTCATT","GAGATTCC","ATTCAGAA","GAATTCGT","CTGAAGCT","TAATGCGC","CGGCTATG","TCCGCGAA","TCTCGCGC","AGCGATAG"]
+
+PCR_I7 = ["TCGGATTCGG","GCGGCTGCGG","AGATTACGTT","CTAACTAGGT","CATAGCGACC","CCGCTAAGAG","ATGGAACGAA","GCGTTCCGTT","GGTTATCGAA","GCATCGTATG","AATACGATAA","TTCCGTCGAC","TCCGGCTTAT","ACCAGGCGCA","AGAGGAGAAT","GTACTCCTAT","GCTAACGGAT","AGTTGAATCA","TGATTAGGTA","TCGTAGCATC","TCTTGAGGTT","AGGTCAGCTT","TATTAGACTT","CTCAATTAGT","TCGCCGCCGG","CCGTATGATT","AACGCGCAGA","CTCGTCGTAG","CTAATTGCGA","CGCGGCCATA","AATATTACTT","ATTGGCAGAT","ATGGCGCCTG","ATAAGGACTC","TAGTAAGCCG","ATTATGCAAG","TTGGCAAGCC","TTGATTGGCG","GCATATGAGC","GAACTCGACT","CTAGCCAGCC","TGCGACCTCT","ATTCTTAGCT","TTGATACGAT","TATAATAGTT","TTGCCGTAGG","AGACCATATC","TTGGTAAGGA","CAGCTAGCGG","CTAAGCCTTG","CGTTACCGCT","GACTGGACCA","GCAAGACCGT","TCAATCTCCT","ATACCTCGAC","TAGAGGCGTT","TAGGTAACTT","TTCGAATATT","TGGACGACTA","GTAGGCTGCA","GTAGGATAAG","CGTCGAGCGC","ACTATTCATT","TTGCTTAGAT","CGAATGGAGC","CTATATAGCC","CTACTAATAA","TGGTTGCCGT","TCCTCTGCCG","GATTCTTGAA","GTAGCAGCTA","CCTCAGCTCC","AAGTAGCTCA","TATTGCTGGA","CCAGATACGG","AACGAATTCG","CGCTTATCGT","AAGTACGCGA","GATCTTCGCA","TCTTAGCCTG","TTATTGAGGC","TTGCGAGCAT","GCTTGAAGAG","AGTCCGCTGC","TAAGTCCTGA","AGTTCTCATG","CAGACTAAGG","TCTATCGCTG","GCGCTATGGT","CATTATTATT","AGCCGTAGTT","TGATATTGCG","ACGGCGTTAA","GGCTTACTCC","GCGCGTTCAT","GAGCGCGATG"]
+
+PCR_I5 = ["CTCCATCGAG","TTGGTAGTCG","GGCCGTCAAC","CCTAGACGAG","TCGTTAGAGC","CGTTCTATCA","CGGAATCTAA","ATGACTGATC","TCAATATCGA","GTAGACCTGG","TTATGACCAA","TTGGTCCGTT","GGTACGTTAA","CAATGAGTCC","GATGCAGTTC","CCATCGTTCC","TTGAGAGAGT","ACTGAGCGAC","TGAGGAATCA","CCTCCGACGG","CATTGACGCT","TCGTCCTTCG","TGATACTCAA","TTCTACCTCA","TCGTCGGAAC","ATCGAGATGA","TAGACTAGTC","GTCGAAGCAG","AGGCGCTAGG","AGATGCAACT","AAGCCTACGA","GTAGGCAATT","GGAGGCGGCG","CCAGTACTTG","GGTCTCGCCG","GGCGGAGGTC","TAGTTCTAGA","TTGGAGTTAG","AGATCTTGGT","GTAATGATCG","CAGAGAGGTC","TTAATTAGCC","CTCTAACTCG","TACGATCATC","AGGCGAGAGC","TCAAGATAGT","TAATTGACCT","CAGCCGGCTT","AGAACCGGAG","GAGATGCATG","GATTACCGGA","TCGTAACGGT","TGGCGACGGA","AGTCATAGCC","GTCAAGTCCA","ATTCGGAAGT","GTCGGTAGTT","AGGACGGACG","CTCCTGGACC","TAGCCTCGTT","GGTTGAACGT","AGGTCCTCGT","GGAAGTTATA","TGGTAATCCT","AAGCTAGGTT","TCCGCGGACT","TGCGGATAGT","TGGCAGCTCG","TGCTACGGTC","GCGCAATGAC","CTTAATCTTG","GGAGTTGCGT","ACTCGTATCA","GGTAATAATG","TCCTTATAGA","CCGACTCCAA","GCCAAGCTTG","CATATCCTAT","ACCTACGCCA","GGAATTCAGT","TGGCGTAGAA","ATTGCGGCCA","TTCAGCTTGG","CCATCTGGCA","CTTATAAGTT","GATTAGATGA","TATAGGATCT","AGCTTATAGG","GTCTGCAATC","CGCCTCTTAT","GTTGGATCTT","GCGATTGCAG","TGCCAGTTGC","CTTAGGTATC","GAGACCTACC","ATTGACCGAG"]
+
+NEX_I5 = ["TATAGCCT","ATAGAGGC","CCTATCCT","GGCTCTGA","AGGCGAAG","TAATCTTA","CAGGACGT","GTACTGAC"]
 
 def ed(string1, string2):
 	edist = 0
@@ -27,12 +37,21 @@ def ed(string1, string2):
 			edist += 1
 	return(edist)
 
+def hamming(str1, str2):
+    ne = operator.ne
+    return sum(imap(ne, str1, str2))
+
+def closest_match(str1, strlist):
+	all_h = [hamming(str1, s2) for s2 in strlist]
+	return min(enumerate(all_h), key=itemgetter(1))[0]
+
 def reverseComplement(seq):
 	seq_dict = {'A':'T','T':'A','G':'C','C':'G','N':'N'}
 	return "".join([seq_dict[base] for base in reversed(seq)])
 
-def clean_and_correct(ifile):
+def clean_and_correct((ifile, fastqpath)):
 	fileR1 = ifile
+
 	fileR2 = ifile.replace('1', '2', 1)
 	kept = 0
 	with gzip.open(os.path.join(fastqpath, fileR1), 'rb') as f:
@@ -46,10 +65,22 @@ def clean_and_correct(ifile):
 				b2 = tag_line[8:18]
 				b4 = reverseComplement(tag_line[18:26])
 				b3 = reverseComplement(tag_line[26:36])
-				b1_cor = difflib.get_close_matches(b1, nex_i7, 1)
-				b2_cor = difflib.get_close_matches(b2, pcr_i7, 1)
-				b3_cor = difflib.get_close_matches(b3, pcr_i5, 1)
-				b4_cor = difflib.get_close_matches(b4, nex_i5, 1)
+				if b1 in NEX_I7:
+					b1_cor = [b1]
+				else:
+					b1_cor = difflib.get_close_matches(b1, NEX_I7, 1)
+				if b2 in PCR_I7:
+					b2_cor = [b2]
+				else:
+					b2_cor = difflib.get_close_matches(b2, PCR_I7, 1)
+				if b3 in PCR_I5:
+					b3_cor = [b3]
+				else:
+					b3_cor = difflib.get_close_matches(b3, PCR_I5, 1)
+				if b4 in NEX_I5:
+					b4_cor = [b4]
+				else:
+					b4_cor = difflib.get_close_matches(b4, NEX_I5, 1)
 				cor_barcode = ''.join(b1_cor + b2_cor + b3_cor + b4_cor)
 				tag_new = ''.join(b1 + b2 + b3 + b4)
 				edit_dist = ed(cor_barcode, tag_new)
@@ -57,7 +88,7 @@ def clean_and_correct(ifile):
 				read_line2 = next(r)
 				plus_line2 = next(r)
 				qual_line2 = next(r)
-				if edit_dist <= args.maxedit:
+				if edit_dist <= 3:
 					kept += 1
 					content = '@' + cor_barcode + ':' + str(count) + '#' + str(edit_dist) + '/1' + '\n' + read_line + plus_line + qual_line
 					content2 = '@' + cor_barcode + ':' + str(count) + '#' + str(edit_dist) + '/1' + '\n' + read_line2 + plus_line2 + qual_line2
@@ -77,17 +108,9 @@ if __name__ == '__main__':
 	parser.add_argument('-E','--maxedit', help='Maximum allowed edit distance (default = 3)', default=3, dest='maxedit')
 	args = parser.parse_args()
 
-	# Standard nextera barcodes
-	nex_i7 = ["ATTACTCG","TCCGGAGA","CGCTCATT","GAGATTCC","ATTCAGAA","GAATTCGT","CTGAAGCT","TAATGCGC","CGGCTATG","TCCGCGAA","TCTCGCGC","AGCGATAG"]
-
-	pcr_i7 = ["TCGGATTCGG","GCGGCTGCGG","AGATTACGTT","CTAACTAGGT","CATAGCGACC","CCGCTAAGAG","ATGGAACGAA","GCGTTCCGTT","GGTTATCGAA","GCATCGTATG","AATACGATAA","TTCCGTCGAC","TCCGGCTTAT","ACCAGGCGCA","AGAGGAGAAT","GTACTCCTAT","GCTAACGGAT","AGTTGAATCA","TGATTAGGTA","TCGTAGCATC","TCTTGAGGTT","AGGTCAGCTT","TATTAGACTT","CTCAATTAGT","TCGCCGCCGG","CCGTATGATT","AACGCGCAGA","CTCGTCGTAG","CTAATTGCGA","CGCGGCCATA","AATATTACTT","ATTGGCAGAT","ATGGCGCCTG","ATAAGGACTC","TAGTAAGCCG","ATTATGCAAG","TTGGCAAGCC","TTGATTGGCG","GCATATGAGC","GAACTCGACT","CTAGCCAGCC","TGCGACCTCT","ATTCTTAGCT","TTGATACGAT","TATAATAGTT","TTGCCGTAGG","AGACCATATC","TTGGTAAGGA","CAGCTAGCGG","CTAAGCCTTG","CGTTACCGCT","GACTGGACCA","GCAAGACCGT","TCAATCTCCT","ATACCTCGAC","TAGAGGCGTT","TAGGTAACTT","TTCGAATATT","TGGACGACTA","GTAGGCTGCA","GTAGGATAAG","CGTCGAGCGC","ACTATTCATT","TTGCTTAGAT","CGAATGGAGC","CTATATAGCC","CTACTAATAA","TGGTTGCCGT","TCCTCTGCCG","GATTCTTGAA","GTAGCAGCTA","CCTCAGCTCC","AAGTAGCTCA","TATTGCTGGA","CCAGATACGG","AACGAATTCG","CGCTTATCGT","AAGTACGCGA","GATCTTCGCA","TCTTAGCCTG","TTATTGAGGC","TTGCGAGCAT","GCTTGAAGAG","AGTCCGCTGC","TAAGTCCTGA","AGTTCTCATG","CAGACTAAGG","TCTATCGCTG","GCGCTATGGT","CATTATTATT","AGCCGTAGTT","TGATATTGCG","ACGGCGTTAA","GGCTTACTCC","GCGCGTTCAT","GAGCGCGATG"]
-
-	pcr_i5 = ["CTCCATCGAG","TTGGTAGTCG","GGCCGTCAAC","CCTAGACGAG","TCGTTAGAGC","CGTTCTATCA","CGGAATCTAA","ATGACTGATC","TCAATATCGA","GTAGACCTGG","TTATGACCAA","TTGGTCCGTT","GGTACGTTAA","CAATGAGTCC","GATGCAGTTC","CCATCGTTCC","TTGAGAGAGT","ACTGAGCGAC","TGAGGAATCA","CCTCCGACGG","CATTGACGCT","TCGTCCTTCG","TGATACTCAA","TTCTACCTCA","TCGTCGGAAC","ATCGAGATGA","TAGACTAGTC","GTCGAAGCAG","AGGCGCTAGG","AGATGCAACT","AAGCCTACGA","GTAGGCAATT","GGAGGCGGCG","CCAGTACTTG","GGTCTCGCCG","GGCGGAGGTC","TAGTTCTAGA","TTGGAGTTAG","AGATCTTGGT","GTAATGATCG","CAGAGAGGTC","TTAATTAGCC","CTCTAACTCG","TACGATCATC","AGGCGAGAGC","TCAAGATAGT","TAATTGACCT","CAGCCGGCTT","AGAACCGGAG","GAGATGCATG","GATTACCGGA","TCGTAACGGT","TGGCGACGGA","AGTCATAGCC","GTCAAGTCCA","ATTCGGAAGT","GTCGGTAGTT","AGGACGGACG","CTCCTGGACC","TAGCCTCGTT","GGTTGAACGT","AGGTCCTCGT","GGAAGTTATA","TGGTAATCCT","AAGCTAGGTT","TCCGCGGACT","TGCGGATAGT","TGGCAGCTCG","TGCTACGGTC","GCGCAATGAC","CTTAATCTTG","GGAGTTGCGT","ACTCGTATCA","GGTAATAATG","TCCTTATAGA","CCGACTCCAA","GCCAAGCTTG","CATATCCTAT","ACCTACGCCA","GGAATTCAGT","TGGCGTAGAA","ATTGCGGCCA","TTCAGCTTGG","CCATCTGGCA","CTTATAAGTT","GATTAGATGA","TATAGGATCT","AGCTTATAGG","GTCTGCAATC","CGCCTCTTAT","GTTGGATCTT","GCGATTGCAG","TGCCAGTTGC","CTTAGGTATC","GAGACCTACC","ATTGACCGAG"]
-
-	nex_i5 = ["TATAGCCT","ATAGAGGC","CCTATCCT","GGCTCTGA","AGGCGAAG","TAATCTTA","CAGGACGT","GTACTGAC"]
 
 	# Open barcode correction log
-	log = open(args.outpref + 'barcode_correct_log.txt', 'a')
+	log = open(args.outpref + 'barcode_correct_log.txt', 'w')
 	log_mes = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) + ' Starting processing\n'
 	log.write(str(log_mes))
 	print log_mes
@@ -107,19 +130,13 @@ if __name__ == '__main__':
 	file_count = 0
 	file_names1 = []
 	line_count = 0
+
+	pool = multiprocessing.Pool(processes=numthreads)
+
 	for i in range(len(R1_files)):
-		print 'processing file1 %s' i
-		with gzip.open(os.path.join(args.fastqpath, R1_files[i]), 'rb') as inp:
-			outp = gzip.open(os.path.join(args.fastqpath,'tempslice1.' + str(file_count) + '.fq.gz'),'wb')
-			for line in inp:
-				outp.write(line)
-				line_count += 1
-				if line_count%1000000:
-					outp.close()
-					outp = gzip.open(os.path.join(args.fastqpath,'tempslice1.' + str(file_count)),'wb')
-					file_count += 1
-			outp.close()
-   				
+		subprocess.call("gunzip -c %s | split -l 1000000 -d -a 4 - %s --filter='gzip > $FILE.gz'" % (os.path.join(args.fastqpath, R1_files[i]), 'tempR1' + str(i) + '.fq'), shell=True)
+
+   	file_names1 = glob.glob(fastqpath + 'tempR1*')			
 	print 'done file split 1'
 	for i in range(len(R2_files)):
 		print 'processing file2 %s' i
@@ -133,10 +150,13 @@ if __name__ == '__main__':
 					outp = gzip.open(os.path.join(args.fastqpath,'tempslice2.' + str(file_count)),'wb')
 					file_count += 1
 			outp.close()     					
+	
 
 	print 'done file split 2'
-	pool = multiprocessing.Pool(processes=numthreads)
-	kept_list = pool.map(clean_and_correct, file_names1)
+
+	kept_list = pool.map(clean_and_correct, zip(file_names1,repeat(fastqpath)))
+
+
 
 	log_mes = "\nSequences kept: " + str(sum(kept_list))  
 	log.write(log_mes)
