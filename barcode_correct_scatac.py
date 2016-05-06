@@ -20,7 +20,6 @@ import multiprocessing
 import glob
 from operator import itemgetter
 import operator
-import imap
 from itertools import imap
 
 # Standard nextera barcodes
@@ -125,10 +124,10 @@ if __name__ == '__main__':
 	print 'starting file split'
 	file_names1 = []
 
-	pool = multiprocessing.Pool(processes=numthreads)
+	pool = multiprocessing.Pool(processes=int(args.numthreads))
 
 	for i in range(len(R1_files)):
-		subprocess.call("gunzip -c %s | split -l 100000000 -d -a 4 - %s --filter='gzip > $FILE.gz'" % (os.path.join(args.fastqpath, R1_files[i]), 'tempR1' + str(i) + '.fq'), shell=True)
+		subprocess.call("gunzip -c %s | split -l 100000000 -d -a 4 - %s --filter='gzip > %s'" % (os.path.join(args.fastqpath, R1_files[i]), 'tempR1' + str(i) + '.fq',args.fastqpath + '/$FILE.gz'), shell=True)
 	
 	print 'done file split 1'
 
