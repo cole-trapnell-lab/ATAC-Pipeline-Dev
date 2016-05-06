@@ -36,8 +36,8 @@ def hamming(str1, str2):
     ne = operator.ne
     return sum(imap(ne, str1, str2))
 
-#def split_files((i, file_list, fastqpath)):
-#	subprocess.call("gunzip -c %s | split -l 1000000 -d -a 4 - %s --filter='gzip > $FILE.gz'" % (os.path.join(fastqpath, file_list[i]), 'tempR1' + str(i) + '.fq'), shell=True)
+def split_files((i, R, file_list, fastqpath)):
+	subprocess.call("gunzip -c %s | split -l 1000000 -d -a 4 - %s --filter='gzip > $FILE.gz'" % (os.path.join(fastqpath, file_list[i]), 'tempR' + str(R) + str(i) + '.fq'), shell=True)
 	
 def closest_match(str1, strlist):
 	all_h = [hamming(str1, s2) for s2 in strlist]
@@ -124,17 +124,16 @@ if __name__ == '__main__':
 	file_names1 = []
 
 	pool = multiprocessing.Pool(processes=numthreads)
+	if not os.path.exists(tempR10.fq0000.gz):
+		pool.map(split_files, zip(range(len(R1_files)),repeat(1),repeat(R1_files),repeat(fastqpath)))
+		print 'done file split 1'
 
-	for i in range(len(R1_files)):
-		subprocess.call("gunzip -c %s | split -l 100000000 -d -a 4 - %s --filter='gzip > $FILE.gz'" % (os.path.join(args.fastqpath, R1_files[i]), 'tempR1' + str(i) + '.fq'), shell=True)
-	
-	print 'done file split 1'
-
-   	file_names1 = glob.glob(fastqpath + 'tempR1*')			
-
-	for i in range(len(R2_files)):
-		subprocess.call("gunzip -c %s | split -l 100000000 -d -a 4 - %s --filter='gzip > $FILE.gz'" % (os.path.join(args.fastqpath, R2_files[i]), 'tempR2' + str(i) + '.fq'), shell=True)
-	print 'done file split 2'
+	   	file_names1 = glob.glob(fastqpath + 'tempR1*')	
+	   			
+	   	pool.map(split_files, zip(range(len(R2_files)),repeat(2),repeat(R2_files),repeat(fastqpath)))
+		print 'done file split 2'
+	else:
+		print 'split already exists, moving on'
 
 	kept_list = pool.map(clean_and_correct, zip(file_names1,repeat(fastqpath)))
 
@@ -143,10 +142,10 @@ if __name__ == '__main__':
 	for f in outfiles1:
 		subprocess.call("cat %s >> %s" % (f, output1), shell=True)
 		f2 = f.replace('1', '2', 1)
-		subprocess.call("cat %s >> %s" % (f2, output2))
+		subprocess.call("cat %s >> %s" % (f2, output2), shell=True)
 
 	subprocess.call('rm tempR*', shell=True)
-	log_mes = "\nSequences kept: " + str(sum(kept_list), shell=True)  
+	log_mes = "\nSequences kept: " + str(sum(kept_list))  
 	log.write(log_mes)
 
 	log_mes = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) + ' Done\n'
