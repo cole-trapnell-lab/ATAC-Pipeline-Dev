@@ -20,7 +20,6 @@ import multiprocessing
 import glob
 from operator import itemgetter
 import operator
-import imap
 from itertools import imap
 
 # Standard nextera barcodes
@@ -120,10 +119,12 @@ if __name__ == '__main__':
 	fastq_files = [f for f in os.listdir(args.fastqpath) if os.path.isfile(os.path.join(args.fastqpath, f))]	
 	R1_files = [f for f in fastq_files if 'R1' in f]
 	R2_files = [f for f in fastq_files if 'R2' in f]
+    log_mes = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) + ' Starting file split\n'
+    log.write(str(log_mes))
 	print 'starting file split'
 	file_names1 = []
 
-	pool = multiprocessing.Pool(processes=numthreads)
+	pool = multiprocessing.Pool(processes=args.numthreads)
 	if not os.path.exists(tempR10.fq0000.gz):
 		pool.map(split_files, zip(range(len(R1_files)),repeat(1),repeat(R1_files),repeat(fastqpath)))
 		print 'done file split 1'
@@ -149,7 +150,7 @@ if __name__ == '__main__':
 	log.write(log_mes)
 
 	log_mes = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) + ' Done\n'
-	log.write(log_mes)
+	log.write(str(log_mes))
 	log.close()
 
 
