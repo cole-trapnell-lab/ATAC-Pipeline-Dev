@@ -103,35 +103,41 @@ if __name__ == '__main__':
 	fastq_files = [f for f in os.listdir(args.fastqpath) if os.path.isfile(os.path.join(args.fastqpath, f))]	
 	R1_files = [f for f in fastq_files if 'R1' in f]
 	R2_files = [f for f in fastq_files if 'R2' in f]
+        log_mes = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) + ' Starting file split\n'
+        log.write(str(log_mes))
 	print 'starting file split'
 	file_count = 0
 	file_names1 = []
 	line_count = 0
 	for i in range(len(R1_files)):
-		print 'processing file1 %s' i
+		log_mes = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) + ' Processing file1 %s\n' % i
+        	log.write(str(log_mes))
+		print 'processing file1 %s' % i
 		with gzip.open(os.path.join(args.fastqpath, R1_files[i]), 'rb') as inp:
 			outp = gzip.open(os.path.join(args.fastqpath,'tempslice1.' + str(file_count) + '.fq.gz'),'wb')
 			for line in inp:
 				outp.write(line)
 				line_count += 1
-				if line_count%1000000:
+				if line_count%1000000 == 0:
 					outp.close()
-					outp = gzip.open(os.path.join(args.fastqpath,'tempslice1.' + str(file_count)),'wb')
 					file_count += 1
+					outp = gzip.open(os.path.join(args.fastqpath,'tempslice1.' + str(file_count) + 'fq.gz'),'wb')
 			outp.close()
    				
 	print 'done file split 1'
 	for i in range(len(R2_files)):
-		print 'processing file2 %s' i
+                log_mes = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) + ' Processing file2 %s\n' % i
+                log.write(str(log_mes))
+		print 'processing file2 %s' % i
 		with gzip.open(os.path.join(args.fastqpath, R2_files[i]), 'rb') as inp:
 			outp = gzip.open(os.path.join(args.fastqpath,'tempslice2.' + str(file_count) + '.fq.gz'),'wb')
 			for line in inp:
 				outp.write(line)
 				line_count += 1
-				if line_count%1000000:
+				if line_count%1000000 == 0:
 					outp.close()
-					outp = gzip.open(os.path.join(args.fastqpath,'tempslice2.' + str(file_count)),'wb')
 					file_count += 1
+					outp = gzip.open(os.path.join(args.fastqpath,'tempslice2.' + str(file_count) + 'fq.gz'),'wb')
 			outp.close()     					
 
 	print 'done file split 2'
@@ -139,10 +145,10 @@ if __name__ == '__main__':
 	kept_list = pool.map(clean_and_correct, file_names1)
 
 	log_mes = "\nSequences kept: " + str(sum(kept_list))  
-	log.write(log_mes)
+	log.write(str(log_mes))
 
 	log_mes = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) + ' Done\n'
-	log.write(log_mes)
+	log.write(str(log_mes))
 	log.close()
 
 
