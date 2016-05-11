@@ -20,7 +20,7 @@ import multiprocessing
 import glob
 from operator import itemgetter
 import operator
-from itertools import imap
+from itertools import imap, repeat
 
 # Standard nextera barcodes
 NEX_I7 = ["ATTACTCG","TCCGGAGA","CGCTCATT","GAGATTCC","ATTCAGAA","GAATTCGT","CTGAAGCT","TAATGCGC","CGGCTATG","TCCGCGAA","TCTCGCGC","AGCGATAG"]
@@ -36,7 +36,7 @@ def hamming(str1, str2):
     return sum(imap(ne, str1, str2))
 
 def split_files((i, R, file_list, fastqpath)):
-	subprocess.call("gunzip -c %s | split -l 1000000 -d -a 4 - %s --filter='gzip > $FILE.gz'" % (os.path.join(fastqpath, file_list[i]), 'tempR' + str(R) + str(i) + '.fq'), shell=True)
+	subprocess.call("gunzip -c %s | split -l 30000000 -d -a 4 - %s --filter='gzip > %s'" % (os.path.join(fastqpath, file_list[i]), 'tempR' + str(R) + str(i) + '.fq', fastqpath + '/$FILE.gz'), shell=True)
 	
 def closest_match(str1, strlist):
 	all_h = [hamming(str1, s2) for s2 in strlist]
@@ -48,8 +48,7 @@ def reverseComplement(seq):
 
 def clean_and_correct((ifile, fastqpath)):
 	fileR1 = ifile
-
-	fileR2 = ifile.replace('1', '2', 1)
+	fileR2 = ifile.replace('R1','R2', 1)
 	kept = 0
 	with gzip.open(os.path.join(fastqpath, fileR1), 'rb') as f:
 		with gzip.open(os.path.join(fastqpath, fileR2), 'rb') as r:
@@ -89,8 +88,8 @@ def clean_and_correct((ifile, fastqpath)):
 						qual_line2 = next(r)
 						if edit_dist <= 3:
 							kept += 1
-							content = '@' + cor_barcode + ':' + str(count) + '#' + str(edit_dist) + '/1' + '\n' + read_line + plus_line + qual_line
-							content2 = '@' + cor_barcode + ':' + str(count) + '#' + str(edit_dist) + '/1' + '\n' + read_line2 + plus_line2 + qual_line2
+							content = '@' + cor_barcode + ':' + str(kept) + '#' + str(edit_dist) + '/1' + '\n' + read_line + plus_line + qual_line
+							content2 = '@' + cor_barcode + ':' + str(kept) + '#' + str(edit_dist) + '/1' + '\n' + read_line2 + plus_line2 + qual_line2
 							o.write(content)
 							g.write(content2)
 	return kept
@@ -110,7 +109,6 @@ if __name__ == '__main__':
 	log = open(args.outpref + 'barcode_correct_log.txt', 'w')
 	log_mes = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) + ' Starting processing\n'
 	log.write(str(log_mes))
-	print log_mes
 	# Open output files
 	output1 = args.outpref + 'split.1.fq.gz'
 	output2 = args.outpref + 'split.2.fq.gz'
@@ -119,40 +117,46 @@ if __name__ == '__main__':
 	fastq_files = [f for f in os.listdir(args.fastqpath) if os.path.isfile(os.path.join(args.fastqpath, f))]	
 	R1_files = [f for f in fastq_files if 'R1' in f]
 	R2_files = [f for f in fastq_files if 'R2' in f]
-    log_mes = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) + ' Starting file split\n'
-    log.write(str(log_mes))
-	print 'starting file split'
+	log_mes = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) + ' Starting file split\n'
+	log.write(str(log_mes))
+	
 	file_names1 = []
 
-	pool = multiprocessing.Pool(processes=args.numthreads)
-	if not os.path.exists(tempR10.fq0000.gz):
-		pool.map(split_files, zip(range(len(R1_files)),repeat(1),repeat(R1_files),repeat(fastqpath)))
+	pool = multiprocessing.Pool(processes=int(args.numthreads))
+	if not os.path.exists(args.fastqpath + '/tempR10.fq0000.gz'):
+		print 'starting file split'
+		pool.map(split_files, zip(range(len(R1_files)),repeat(1),repeat(R1_files),repeat(args.fastqpath)))
 		print 'done file split 1'
+	else:
+                print 'split1 already exists, moving on'
 
-	   	file_names1 = glob.glob(fastqpath + 'tempR1*')	
-	   			
-	   	pool.map(split_files, zip(range(len(R2_files)),repeat(2),repeat(R2_files),repeat(fastqpath)))
+	file_names1 = glob.glob(args.fastqpath + '/tempR1*[!q].gz')	
+	print(file_names1)
+	if not os.path.exists(args.fastqpath + '/tempR20.fq0000.gz'):	
+	   	pool.map(split_files, zip(range(len(R2_files)),repeat(2),repeat(R2_files),repeat(args.fastqpath)))
 		print 'done file split 2'
 	else:
-		print 'split already exists, moving on'
-
-	kept_list = pool.map(clean_and_correct, zip(file_names1,repeat(fastqpath)))
+		print 'split2 already exists, moving on'
+	
+	if not os.path.exists(args.fastqpath + '/tempR10.fq0000.gz.out.fq.gz'):
+		kept_list = pool.map(clean_and_correct, zip(file_names1,repeat(args.fastqpath)))
+		log_mes = "Sequences kept: " + str(sum(kept_list)) + "\n" 
+		log.write(log_mes)
+	else:
+		print 'barcode corrected files already exist, moving on'
 
 	outfiles1 = [f + '.out.fq.gz' for f in file_names1]
 	
 	for f in outfiles1:
 		subprocess.call("cat %s >> %s" % (f, output1), shell=True)
-		f2 = f.replace('1', '2', 1)
+		f2 = f.replace('R1', 'R2', 1)
 		subprocess.call("cat %s >> %s" % (f2, output2), shell=True)
 
 	subprocess.call('rm tempR*', shell=True)
-	log_mes = "\nSequences kept: " + str(sum(kept_list))  
-	log.write(log_mes)
 
 	log_mes = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) + ' Done\n'
 	log.write(str(log_mes))
 	log.close()
-
 
 
 

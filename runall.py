@@ -79,7 +79,7 @@ if __name__ == '__main__':
 	
 	if not os.path.exists(trimmer_out1) or args.force_overwrite_all or args.force_overwrite_trimming:
 		trimmer_command = 'java -Xmx1G -jar -threads %s %s PE %s %s %s %s %s %s ILLUMINACLIP:%sTrimmomatic-0.36/adapters/NexteraPE-PE.fa:2:30:10:1:true MINLEN:20' % \
-			(args.nthreads, TRIMMOMATIC, BAR_OUT1, BAR_OUT2, trimmer_out1, trimmer_un_out1, trimmer_out2, trimmer_un_out2, PIPELINE_PATH)
+			(args.nthreads, TRIMMOMATIC, bar_out1, bar_out2, trimmer_out1, trimmer_un_out1, trimmer_out2, trimmer_un_out2, PIPELINE_PATH)
 
 		subprocess.call(trimmer_command, shell=True)
 	else:
@@ -87,7 +87,7 @@ if __name__ == '__main__':
 
 	print "Cleaning up..."
 
-	clean_command = 'rm %s; rm %s; rm %s; rm %s; ' % (BAR_OUT1, BAR_OUT2, trimmer_un_out1, trimmer_un_out2)
+	clean_command = 'rm %s; rm %s; rm %s; rm %s; ' % (bar_out1, bar_out2, trimmer_un_out1, trimmer_un_out2)
 	subprocess.call(clean_command, shell=True)
 
 	print "Starting mapping..."
