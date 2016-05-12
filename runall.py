@@ -142,7 +142,7 @@ if __name__ == '__main__':
 
             print "Trimming adapters..."
             logging.info('Trimmomatic started.')
-            trimmer_command = ('java -Xmx1G -jar -threads %s %s PE %s %s %s %s '
+            trimmer_command = ('java -Xmx1G -jar %s -threads %s PE %s %s %s %s '
                 '%s %s ILLUMINACLIP:%s'
                 'Trimmomatic-0.36/adapters/NexteraPE-PE.fa:2:30:10:1:true'
                 'MINLEN:20' % (args.nthreads, TRIMMOMATIC, bar_out1, bar_out2,
