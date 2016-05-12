@@ -56,8 +56,8 @@ if __name__ == '__main__':
     parser.add_argument('--force_overwrite_bcl2fastq', action='store_true',
         help='Force overwrite bcl2fastq regardless of files already present.')
     parser.add_argument('--force_overwrite_cleanfastq', action='store_true',
-        help='Force overwrite fastq cleaning regardless of files already
-        present.')
+        help='Force overwrite fastq cleaning regardless of files already '
+        'present.')
     parser.add_argument('--force_overwrite_barcodecorrect',
         action='store_true', help='Force overwrite barcode correction '
         'regardless of files already present.')
@@ -72,8 +72,8 @@ if __name__ == '__main__':
     OUTPUT_PREFIX = os.path.join(args.outdir, args.prefix)
     FASTQ_DIRECTORY = os.path.join(args.outdir, 'fastqs')
 
-	bar_out1 = OUTPUT_PREFIX + 'split.1.fq.gz'
-	bar_out2 = OUTPUT_PREFIX + 'split.2.fq.gz'
+    bar_out1 = OUTPUT_PREFIX + 'split.1.fq.gz'
+    bar_out2 = OUTPUT_PREFIX + 'split.2.fq.gz'
     trimmer_out1 = OUTPUT_PREFIX + '.split.1.trimmed.paired.fastq.gz'
     trimmer_out2 = OUTPUT_PREFIX + '.split.2.trimmed.paired.fastq.gz'
     trimmer_un_out1 = OUTPUT_PREFIX + '.split.1.trimmed.unpaired.fastq.gz'
@@ -81,43 +81,43 @@ if __name__ == '__main__':
 
     # Configure logger
     logging.basicConfig(filename= OUTPUT_PREFIX + '.log',format='%(asctime)s '
-        '%(message)s')
+        '%(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
     logging.info('Pipeline started.')
 
     # Only continue with initial cleaning process if cleaned and trimmed files
     # do not exist, or user specifies. This line exists because after the clean
     # step, the intermediate files checked for below are removed.
-	if not os.path.exists(trimmer_out1) or
-        args.force_overwrite_all or
+    if not os.path.exists(trimmer_out1) or \
+        args.force_overwrite_all or \
         args.force_overwrite_trimming:
 
-		# Submit bcl2fastq only if no existing results or if user wants to
+	# Submit bcl2fastq only if no existing results or if user wants to
         # overwrite
-		if len(os.listdir(FASTQ_DIRECTORY)) == 0 or
-            args.force_overwrite_all or
+        if len(os.listdir(FASTQ_DIRECTORY)) == 0 or \
+            args.force_overwrite_all or \
             args.force_overwrite_bcl2fastq:
 
             print 'Starting bcl2fastq...'
             logging.info('bcl2fastq started.')
-			bcl2fastq_command = 'module load modules modules-init modules-gs '
+	    bcl2fastq_command = ('module load modules modules-init modules-gs '
                 'bcl2fastq/2.16 fastqc/0.10.1; bcl2fastq --runfolder-dir %s '
                 '-o %s --ignore-missing-filter' % (args.rundir,
-                FASTQ_DIRECTORY)
-			f = open(os.path.join(args.outdir, "bcl2fastq_log.txt"), 'w')
-			subprocess.call(bcl2fastq_command, shell=True, stdout = f,
+                FASTQ_DIRECTORY))
+            f = open(os.path.join(args.outdir, "bcl2fastq_log.txt"), 'w')
+            subprocess.call(bcl2fastq_command, shell=True, stdout = f,
                 stderr=f)
             logging.info('bcl2fastq ended.')
 
-		else:
+        else:
 
-			print 'fastq directory is not empty, skipping bcl2fastq. Specify '
-                '--force_overwrite_all or --force_overwrite_bcl2fastq to redo.'
+            print ('fastq directory is not empty, skipping bcl2fastq. Specify '
+                '--force_overwrite_all or --force_overwrite_bcl2fastq to redo.')
             logging.info('bcl2fastq skipped.')
 
         # Submit barcode corrector only if no existing results or if user wants
         # to overwrite
-		if not os.path.exists(bar_out1) or
-            args.force_overwrite_all or
+        if not os.path.exists(bar_out1) or \
+            args.force_overwrite_all or \
             args.force_overwrite_barcodecorrect:
 
             print "Cleaning and fixing barcodes..."
@@ -127,61 +127,61 @@ if __name__ == '__main__':
                 args.maxedit, args.nthreads), shell=True)
             logging.info('Barcode corrector ended.')
 
-		else:
+        else:
 
-			print 'Barcodes already fixed, skipping fix barcodes. Specify '
+            print ('Barcodes already fixed, skipping fix barcodes. Specify '
                 '--force_overwrite_all or --force_overwrite_barcodecorrect to '
-                'redo.'
+                'redo.')
             logging.info('Barcode corrector skipped.')
 
         # Submit trimmer only if no existing results or if user wants
         # to overwrite
-		if not os.path.exists(trimmer_out1) or
-            args.force_overwrite_all or
+        if not os.path.exists(trimmer_out1) or \
+            args.force_overwrite_all or \
             args.force_overwrite_trimming:
 
-		    print "Trimming adapters..."
+            print "Trimming adapters..."
             logging.info('Trimmomatic started.')
-            trimmer_command = 'java -Xmx1G -jar -threads %s %s PE %s %s %s %s '
+            trimmer_command = ('java -Xmx1G -jar -threads %s %s PE %s %s %s %s '
                 '%s %s ILLUMINACLIP:%s'
                 'Trimmomatic-0.36/adapters/NexteraPE-PE.fa:2:30:10:1:true'
                 'MINLEN:20' % (args.nthreads, TRIMMOMATIC, bar_out1, bar_out2,
                 trimmer_out1, trimmer_un_out1, trimmer_out2, trimmer_un_out2,
-                PIPELINE_PATH)
-			subprocess.call(trimmer_command, shell=True)
+                PIPELINE_PATH))
+            subprocess.call(trimmer_command, shell=True)
             logging.info('Trimmomatic ended.')
 
-		else:
+        else:
 
-			print 'Sequences already trimmed, skipping trimming. Specify '
-                '--force_overwrite_all or --force_overwrite_trimming to redo.'
+            print ('Sequences already trimmed, skipping trimming. Specify '
+                '--force_overwrite_all or --force_overwrite_trimming to redo.')
             logging.info('Trimmomatic skipped.')
 
-		print "Cleaning up..."
+        print "Cleaning up..."
 
         # Remove temporary files created during the pipeline.
-		clean_command = 'rm %s; rm %s; rm %s; rm %s; ' % (bar_out1, bar_out2,
-            trimmer_un_out1, trimmer_un_out2)
-		subprocess.call(clean_command, shell=True)
+        clean_command = ('rm %s; rm %s; rm %s; rm %s; ' % (bar_out1, bar_out2,
+            trimmer_un_out1, trimmer_un_out2))
+        subprocess.call(clean_command, shell=True)
 
     # Submit bowtie mapping only if no existing results or if user wants
     # to overwrite
-    if not os.path.exists(OUTPUT_PREFIX + ".split.bam") or
-        args.force_overwrite_all or
+    if not os.path.exists(OUTPUT_PREFIX + ".split.bam") or \
+        args.force_overwrite_all or \
         args.force_overwrite_mapping:
 
         logging.info('Bowtie2 started.')
         print "Starting mapping..."
-		subprocess.call('bowtie2 -X 1000 -p %s -x %s -1 %s -2 %s | samtools '
+        subprocess.call('bowtie2 -X 1000 -p %s -x %s -1 %s -2 %s | samtools '
             'view -Sb - > %s.split.bam' % (args.nthreads, args.genome,
             trimmer_out1, trimmer_out2, OUTPUT_PREFIX), shell=True)
         logging.info('Bowtie2 ended.')
         print "Mapping complete..."
 
-	else:
+    else:
 
-		print 'Sequences already mapped, skipping mapping. Specify '
-            '--force_overwrite_all or --force_overwrite_mapping to redo.'
+        print ('Sequences already mapped, skipping mapping. Specify '
+            '--force_overwrite_all or --force_overwrite_mapping to redo.')
         logging.info('Bowtie2 skipped.')
 
     if not os.path.exists(OUTPUT_PREFIX + ".true.nodups.bam"):
