@@ -81,7 +81,7 @@ if __name__ == '__main__':
 
     # Configure logger
     logging.basicConfig(filename= OUTPUT_PREFIX + '.log',format='%(asctime)s '
-        '%(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+        '%(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
     logging.info('Pipeline started.')
 
     # Only continue with initial cleaning process if cleaned and trimmed files
@@ -160,8 +160,9 @@ if __name__ == '__main__':
         print "Cleaning up..."
 
         # Remove temporary files created during the pipeline.
-        clean_command = ('rm %s; rm %s; rm %s; rm %s; ' % (bar_out1, bar_out2,
-            trimmer_un_out1, trimmer_un_out2))
+        clean_command = ('rm %s; rm %s; rm %s; rm %s; rm %stempR*' %
+            (bar_out1, bar_out2, trimmer_un_out1, trimmer_un_out2,
+            FASTQ_DIRECTORY))
         subprocess.call(clean_command, shell=True)
 
     # Submit bowtie mapping only if no existing results or if user wants
@@ -204,7 +205,7 @@ if __name__ == '__main__':
         logging.info('Deduplication ended.')
 
     else:
-        
+
         print 'Sequences already deduplicating, skipping.'
         logging.info('Deduplication skipped.')
 
