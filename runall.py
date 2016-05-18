@@ -142,10 +142,10 @@ if __name__ == '__main__':
 
             print "Trimming adapters..."
             logging.info('Trimmomatic started.')
-            trimmer_command = ('java -Xmx1G -jar -threads %s %s PE %s %s %s %s '
+            trimmer_command = ('java -Xmx1G -jar %s PE -threads %s %s %s %s %s '
                 '%s %s ILLUMINACLIP:%s'
-                'Trimmomatic-0.36/adapters/NexteraPE-PE.fa:2:30:10:1:true'
-                'MINLEN:20' % (args.nthreads, TRIMMOMATIC, bar_out1, bar_out2,
+                '/Trimmomatic-0.36/adapters/NexteraPE-PE.fa:2:30:10:1:true'
+                'MINLEN:20' % (TRIMMOMATIC, args.nthreads, bar_out1, bar_out2,
                 trimmer_out1, trimmer_un_out1, trimmer_out2, trimmer_un_out2,
                 PIPELINE_PATH))
             subprocess.call(trimmer_command, shell=True)
@@ -160,7 +160,7 @@ if __name__ == '__main__':
         print "Cleaning up..."
 
         # Remove temporary files created during the pipeline.
-        clean_command = ('rm %s; rm %s; rm %s; rm %s; rm %stempR*' %
+        clean_command = ('rm %s; rm %s; rm %s; rm %s; rm %s/tempR*' %
             (bar_out1, bar_out2, trimmer_un_out1, trimmer_un_out2,
             FASTQ_DIRECTORY))
         subprocess.call(clean_command, shell=True)
@@ -189,10 +189,12 @@ if __name__ == '__main__':
 
         print "Deduplicating..."
         logging.info('Deduplication started.')
-        subprocess.call("samtools view -h -f3 -F12 -q10 %s.split.bam | grep "
-            "-v '[0-9]'$'\t'chrM | samtools view -u - | samtools sort - "
-            "%s.split.q10.sort.bam" % (OUTPUT_PREFIX, OUTPUT_PREFIX),
-            shell=True)
+        if not os.path.exists(OUTPUT_PREFIX + ".split.q10.sort.bam"):
+            subprocess.call("samtools view -h -f3 -F12 -q10 %s.split.bam | grep "
+                " -v '\tchrM\t' | samtools sort -T %s.sorttemp -@ %s - "
+                "-o %s.split.q10.sort.bam" % (OUTPUT_PREFIX, OUTPUT_PREFIX, args.nthreads, OUTPUT_PREFIX),
+                shell=True)
+        
         subprocess.call('samtools index %s.split.q10.sort.bam' % OUTPUT_PREFIX,
             shell=True)
         subprocess.call('python %s %s.split.q10.sort.bam %s.true.nodups.bam' %
