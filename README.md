@@ -4,8 +4,8 @@ The purpose of this pipeline is to get reads from bcl (directly off the illumina
 ###System Requirements
 Currently, this must be run on the lab cluster because it recruits cluster modules.
 Requires the following modules, add this to your path:
-module load coreutils/8.24
-module load pysam/0.8.1
+`module load coreutils/8.24`
+`module load pysam/0.8.1`
 
 ###Example run
 `python runall.py -R /net/shendure/vol9/seq/NEXTSEQ/160311_NS500488_0144_AH3L3MBGXY/ -O /net/trapnell/vol1/hannah/data/ -P Experiment1`
