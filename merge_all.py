@@ -13,7 +13,8 @@ if __name__ == '__main__':
 	parser.add_argument('-P','--prefix',help='Output file prefix, otherwise default(out)', default = "out", dest='prefix')
 	parser.add_argument('-C','--barcodes', help='Barcodes combinations allowed in a text file.', default=3, dest='barcodes')
 
-
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
 	OUTPUT_PREFIX = os.path.join(args.outdir, args.prefix)
 
     # Make sorted bed file from all bams
@@ -23,7 +24,7 @@ if __name__ == '__main__':
 	subprocess.call('bedtools sort -i %s.all.bed > %s.sort.bed' % (OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
 
     # Split cell name to only have barcode
-	subprocess.call(awk 'gsub(/(:| )+/,"\t")' %s.sort.bed > %s.bc.bed
+	subprocess.call('''awk 'gsub(/(:| )+/,"\t")''' %s.sort.bed > %s.bc.bed
 
     # Keep only barcodes that are allowed
     subprocess.call("grep -Fwf %s %s.bc.bed > %s.bc_only.bed" % (barcodes, OUTPUT_PREFIX, OUTPUT_PREFIX)
