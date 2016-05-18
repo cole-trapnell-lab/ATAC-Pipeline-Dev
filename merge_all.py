@@ -7,27 +7,27 @@ import sys
 
 
 if __name__ == '__main__':
-	parser = argparse.ArgumentParser(description='A program to aggregate mapped bams from sequencing runs and run hotspot for scATAC-seq analysis.')
-	parser.add_argument('-B','--bamlist', help='Paths to bams to combined', dest='bamlist')
-	parser.add_argument('-O','--outdir', help='Output directory', dest='outdir')
-	parser.add_argument('-P','--prefix',help='Output file prefix, otherwise default(out)', default = "out", dest='prefix')
-	parser.add_argument('-C','--barcodes', help='Barcodes combinations allowed in a text file.', default=3, dest='barcodes')
-
-    if not os.path.exists(outdir):
-        os.mkdir(outdir)
-	OUTPUT_PREFIX = os.path.join(args.outdir, args.prefix)
+    parser = argparse.ArgumentParser(description='A program to aggregate mapped bams from sequencing runs and run hotspot for scATAC-seq analysis.')
+    parser.add_argument('-B','--bamlist', nargs='*', help='Paths to bams to combined', dest='bamlist')
+    parser.add_argument('-O','--outdir', help='Output directory', dest='outdir')
+    parser.add_argument('-P','--prefix',help='Output file prefix, otherwise default(out)', default = "out", dest='prefix')
+    parser.add_argument('-C','--barcodes', help='Barcodes combinations allowed in a text file.', default=3, dest='barcodes')
+    args = parser.parse_args()
+    if not os.path.exists(args.outdir):
+        os.mkdir(args.outdir)
+    OUTPUT_PREFIX = os.path.join(args.outdir, args.prefix)
 
     # Make sorted bed file from all bams
-	for bam in bamlist:
-		subprocess.call('bedtools bamtobed -i %s >> %s.all.bed' % (bam, OUTPUT_PREFIX), shell=True)
+    for bam in args.bamlist:
+        subprocess.call('bedtools bamtobed -i %s >> %s.all.bed' % (bam, OUTPUT_PREFIX), shell=True)
 
-	subprocess.call('bedtools sort -i %s.all.bed > %s.sort.bed' % (OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
+    subprocess.call('bedtools sort -i %s.all.bed > %s.sort.bed' % (OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
 
     # Split cell name to only have barcode
-	subprocess.call('''awk 'gsub(/(:| )+/,"\t")''' %s.sort.bed > %s.bc.bed
+    subprocess.call('''awk 'gsub(/(:| )+/,"\t") %s.sort.bed > %s.bc.bed''' % (OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
 
     # Keep only barcodes that are allowed
-    subprocess.call("grep -Fwf %s %s.bc.bed > %s.bc_only.bed" % (barcodes, OUTPUT_PREFIX, OUTPUT_PREFIX)
+    subprocess.call("grep -Fwf %s %s.bc.bed > %s.bc_only.bed" % (args.barcodes, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
 
     #print "Reads kept after matching barcodes: %s, %s%" %()
     # Count cell reads
