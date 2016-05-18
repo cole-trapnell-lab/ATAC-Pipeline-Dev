@@ -134,12 +134,12 @@ def clean_and_correct((ifile, fastqpath)):
 						qual_line2 = next(r)
 						if edit_dist <= 3:
 							kept += 1
-							content = '@' + cor_barcode + ':' + str(kept) + '#'
+							content = ('@' + cor_barcode + ':' + str(kept) + '#'
                                 + str(edit_dist) + '/1' + '\n' + read_line +
-                                plus_line + qual_line
-							content2 = '@' + cor_barcode + ':' + str(kept) +
+                                plus_line + qual_line)
+							content2 = ('@' + cor_barcode + ':' + str(kept) +
                                 '#' + str(edit_dist) + '/1' + '\n' + read_line2
-                                 + plus_line2 + qual_line2
+                                 + plus_line2 + qual_line2)
 							o.write(content)
 							g.write(content2)
 	return kept
@@ -161,8 +161,8 @@ if __name__ == '__main__':
 
 	# Open barcode correction log
 	log = open(args.outpref + 'barcode_correct_log.txt', 'w')
-	log_mes = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) +
-        ' Starting processing\n'
+	log_mes = ('{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) +
+        ' Starting processing\n')
 	log.write(str(log_mes))
 	# Open output files
 	output1 = args.outpref + 'split.1.fq.gz'
@@ -173,8 +173,8 @@ if __name__ == '__main__':
         os.path.isfile(os.path.join(args.fastqpath, f))]
 	R1_files = [f for f in fastq_files if 'R1' in f]
 	R2_files = [f for f in fastq_files if 'R2' in f]
-	log_mes = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) +
-        ' Starting file split\n'
+	log_mes = ('{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) +
+        ' Starting file split\n')
 	log.write(str(log_mes))
 
 	file_names1 = []
@@ -212,7 +212,7 @@ if __name__ == '__main__':
 		f2 = f.replace('R1', 'R2', 1)
 		subprocess.call("cat %s >> %s" % (f2, output2), shell=True)
 
-	log_mes = '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) +
-        ' Done\n'
+	log_mes = ('{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) +
+        ' Done\n')
 	log.write(str(log_mes))
 	log.close()

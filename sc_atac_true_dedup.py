@@ -1,4 +1,4 @@
-import pysam #v0.8.1
+import pysam   #/0.8.1
 import sys
 
 inbam = sys.argv[1]
