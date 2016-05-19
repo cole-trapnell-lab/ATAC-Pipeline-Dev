@@ -4,6 +4,7 @@ import subprocess
 import gzip
 import os.path
 import sys
+import logging
 
 PIPELINE_PATH = os.path.dirname(os.path.realpath(__file__))
 DEDUPLICATER = os.path.join(PIPELINE_PATH, 'sc_atac_true_dedup.py')
@@ -32,13 +33,14 @@ if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PREFIX + ".merge.bam") or \
         args.force_overwrite_all:
         logging.info('Merge started.')
-        subprocess.call('samtools merge %s.merge.bam %s' % (OUTPUT_PREFIX, args.bamlist), shell=True)
+        subprocess.call('samtools merge %s.merge.bam %s' % (OUTPUT_PREFIX, ' '.join(args.bamlist)), shell=True)
+        subprocess.call('samtools index %s.merge.bam' % OUTPUT_PREFIX, shell=True)
         logging.info('Merge ended.')
 
     else:
         print 'Bams already merged, skipping.'
         logging.info('Merge skipped.')
-
+   
     if not os.path.exists(OUTPUT_PREFIX + ".true.nodups.bam"):
         logging.info('Deduplication started.')
         subprocess.call('python %s %s.merge.bam %s.true.nodups.bam' %
@@ -56,7 +58,7 @@ if __name__ == '__main__':
 
     if not os.path.exists(OUTPUT_PREFIX + ".all.bed") or \
             args.force_overwrite_all:
-        subprocess.call('bedtools bamtobed -i %s > %s.all.bed' % (bam, OUTPUT_PREFIX), shell=True)
+        subprocess.call('bedtools bamtobed -i %s.true.nodups.bam > %s.all.bed' % (OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
 
     if not os.path.exists(OUTPUT_PREFIX + ".sort.bed") or \
         args.force_overwrite_all:

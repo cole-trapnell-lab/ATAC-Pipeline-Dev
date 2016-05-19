@@ -172,8 +172,8 @@ if __name__ == '__main__':
 
         logging.info('Bowtie2 started.')
         print "Starting mapping..."
-        subprocess.call('bowtie2 -X 1000 -p %s -x %s -1 %s -2 %s | samtools '
-            'view -Sb - > %s.split.bam' % (args.nthreads, args.genome,
+        subprocess.call('bowtie2 --un-conc-gz %s.unaligned.fq.gz -X 1000 -p %s -x %s -1 %s -2 %s | samtools '
+            'view -Sb - > %s.split.bam' % (OUTPUT_PREFIX, args.nthreads, args.genome,
             trimmer_out1, trimmer_out2, OUTPUT_PREFIX), shell=True)
         logging.info('Bowtie2 ended.')
         print "Mapping complete..."
