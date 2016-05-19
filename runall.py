@@ -17,7 +17,6 @@ import logging
 PIPELINE_PATH = os.path.dirname(os.path.realpath(__file__))
 
 BARCODE_CORRECTER = os.path.join(PIPELINE_PATH, 'barcode_correct_scatac.py')
-DEDUPLICATER = os.path.join(PIPELINE_PATH, 'sc_atac_true_dedup.py')
 TRIMMOMATIC = os.path.join(PIPELINE_PATH,
     'Trimmomatic-0.36/trimmomatic-0.36.jar')
 
@@ -185,30 +184,16 @@ if __name__ == '__main__':
             '--force_overwrite_all or --force_overwrite_mapping to redo.')
         logging.info('Bowtie2 skipped.')
 
-    if not os.path.exists(OUTPUT_PREFIX + ".true.nodups.bam"):
-
-        print "Deduplicating..."
-        logging.info('Deduplication started.')
-        if not os.path.exists(OUTPUT_PREFIX + ".split.q10.sort.bam"):
-            subprocess.call("samtools view -h -f3 -F12 -q10 %s.split.bam | grep "
-                " -v '\tchrM\t' | samtools sort -T %s.sorttemp -@ %s - "
-                "-o %s.split.q10.sort.bam" % (OUTPUT_PREFIX, OUTPUT_PREFIX, args.nthreads, OUTPUT_PREFIX),
-                shell=True)
-        
-        subprocess.call('samtools index %s.split.q10.sort.bam' % OUTPUT_PREFIX,
-            shell=True)
-        subprocess.call('python %s %s.split.q10.sort.bam %s.true.nodups.bam' %
-            (DEDUPLICATER, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
-        subprocess.call('samtools view %s.true.nodups.bam | sort -u -k1,1 | '
-            'cut -f9 > %s.insertsize.txt' % (OUTPUT_PREFIX, OUTPUT_PREFIX),
-            shell=True)
-        subprocess.call('samtools index %s.true.nodups.bam' % OUTPUT_PREFIX,
-            shell=True)
-        logging.info('Deduplication ended.')
-
+    if not os.path.exists(OUTPUT_PREFIX + ".split.q10.sort.bam"):
+        print "Filtering low quality reads..."
+        logging.info('Quality filter started.')
+        subprocess.call("samtools view -h -f3 -F12 -q10 %s.split.bam | grep "
+            " -v '\tchrM\t' | samtools sort -T %s.sorttemp -@ %s - "
+            "-o %s.split.q10.sort.bam" % (OUTPUT_PREFIX, OUTPUT_PREFIX, args.nthreads, OUTPUT_PREFIX), shell=True)
+        subprocess.call('samtools index %s.split.q10.sort.bam' % OUTPUT_PREFIX, shell=True)
+        logging.info('Quality filter finished.')
     else:
-
-        print 'Sequences already deduplicating, skipping.'
-        logging.info('Deduplication skipped.')
+        print 'Sequences already filtered, skipping.'
+        logging.info('Quality filter skipped.')
 
     print "Complete."
