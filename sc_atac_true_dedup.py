@@ -8,14 +8,10 @@ readsin = pysam.AlignmentFile(inbam,"rb")
 readsout = pysam.AlignmentFile(outbam,"wb",template=readsin)
 refs = readsin.references
 for refchrom in refs:
-	if refchrom == 'chrM':
-		continue
 	readdic = {}
 	print "Deduplicating " + refchrom + "..."
 	for read in readsin.fetch(refchrom):
 		readname = read.qname.split(':')[0]
-		if 'CTF' in readname or 'AMBIG' in readname:
-			continue
 		readpos = str(read.pos + 1)
 		matepos = str(read.mpos)
 		try:
