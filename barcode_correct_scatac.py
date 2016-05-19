@@ -73,8 +73,7 @@ NEX_I5 = ["TATAGCCT", "ATAGAGGC", "CCTATCCT", "GGCTCTGA", "AGGCGAAG",
     "TAATCTTA", "CAGGACGT", "GTACTGAC"]
 
 def hamming(str1, str2):
-    ne = operator.ne
-    return sum(imap(ne, str1, str2))
+    return sum(imap(operator.ne, str1, str2))
 
 def split_files((i, R, file_list, fastqpath)):
 	subprocess.call("gunzip -c %s | split -l 30000000 -d -a 4 - %s "
@@ -101,6 +100,12 @@ def clean_and_correct((ifile, fastqpath)):
 					for tag_line in f:
 						tag_line = tag_line.strip().split()[1].split(':')\
                             [3].replace('+','')
+                        if len(tag_line != 36):
+                            tag_line2 = next(r)
+                            read_line2 = next(r)
+                            plus_line2 = next(r)
+                            qual_line2 = next(r)
+                            continue
 						read_line = next(f)
 						plus_line = next(f)
 						qual_line = next(f)

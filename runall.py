@@ -36,19 +36,19 @@ if __name__ == '__main__':
         ' BCL files to cleaned and corrected fastq files for scATAC-seq '
         'analysis.')
     parser.add_argument('-R','--rundir', help='Run directory containing BCL '
-        'files', dest='rundir')
+        'files', dest='rundir', required=True)
     parser.add_argument('-O','--outdir', help='Output directory',
-        dest='outdir')
+        dest='outdir', required=True)
     parser.add_argument('-P','--prefix',help='Output file prefix, otherwise '
-        'default(out)', default = "out", dest='prefix')
+        'default(out)', default = "out", dest='prefix', required=False)
     parser.add_argument('-E','--maxedit', help='Maximum allowed edit distance '
-        '(default = 3)', default=3, dest='maxedit')
+        '(default = 3)', default=3, dest='maxedit', required=False)
     parser.add_argument('-G','--genome', help='Path to genome annotation '
         '(default=/net/trapnell/vol1/genomes/human/hg19/bowtie2/)',
         default='/net/trapnell/vol1/genomes/human/hg19/bowtie2/hg19',
-        dest='genome')
+        dest='genome', required=False)
     parser.add_argument('-p','--nthreads', help='Number of cores available '
-        '(default=1)', default=1, dest='nthreads')
+        '(default=1)', default=1, dest='nthreads', required=False)
     parser.add_argument('--force_overwrite_all', action='store_true',
         help='Force overwrite of all steps of pipeline regardless of files '
         'already present.')
@@ -110,7 +110,8 @@ if __name__ == '__main__':
         else:
 
             print ('fastq directory is not empty, skipping bcl2fastq. Specify '
-                '--force_overwrite_all or --force_overwrite_bcl2fastq to redo.')
+                '--force_overwrite_all or --force_overwrite_bcl2fastq to '
+                'redo.')
             logging.info('bcl2fastq skipped.')
 
         # Submit barcode corrector only if no existing results or if user wants
@@ -141,8 +142,8 @@ if __name__ == '__main__':
 
             print "Trimming adapters..."
             logging.info('Trimmomatic started.')
-            trimmer_command = ('java -Xmx1G -jar %s PE -threads %s %s %s %s %s '
-                '%s %s ILLUMINACLIP:%s'
+            trimmer_command = ('java -Xmx1G -jar %s PE -threads %s %s %s %s '
+                '%s %s %s ILLUMINACLIP:%s'
                 '/Trimmomatic-0.36/adapters/NexteraPE-PE.fa:2:30:10:1:true'
                 'MINLEN:20' % (TRIMMOMATIC, args.nthreads, bar_out1, bar_out2,
                 trimmer_out1, trimmer_un_out1, trimmer_out2, trimmer_un_out2,
@@ -172,9 +173,10 @@ if __name__ == '__main__':
 
         logging.info('Bowtie2 started.')
         print "Starting mapping..."
-        subprocess.call('bowtie2 --un-conc-gz %s.unaligned.fq.gz -X 1000 -p %s -x %s -1 %s -2 %s | samtools '
-            'view -Sb - > %s.split.bam' % (OUTPUT_PREFIX, args.nthreads, args.genome,
-            trimmer_out1, trimmer_out2, OUTPUT_PREFIX), shell=True)
+        subprocess.call('bowtie2 --un-conc-gz %s.unaligned.fq.gz -X 1000 -p %s'
+            '-x %s -1 %s -2 %s | samtools view -Sb - > %s.split.bam' %
+            (OUTPUT_PREFIX, args.nthreads, args.genome, trimmer_out1,
+            trimmer_out2, OUTPUT_PREFIX), shell=True)
         logging.info('Bowtie2 ended.')
         print "Mapping complete..."
 
@@ -188,9 +190,11 @@ if __name__ == '__main__':
         print "Filtering low quality reads..."
         logging.info('Quality filter started.')
         subprocess.call("samtools view -h -f3 -F12 -q10 %s.split.bam | grep "
-            " -v '\tchrM\t' | samtools sort -T %s.sorttemp -@ %s - "
-            "-o %s.split.q10.sort.bam" % (OUTPUT_PREFIX, OUTPUT_PREFIX, args.nthreads, OUTPUT_PREFIX), shell=True)
-        subprocess.call('samtools index %s.split.q10.sort.bam' % OUTPUT_PREFIX, shell=True)
+            " -v '\tchrM\t' | samtools sort -T %s.sorttemp -@ %s - -o "
+            "%s.split.q10.sort.bam" % (OUTPUT_PREFIX, OUTPUT_PREFIX,
+            args.nthreads, OUTPUT_PREFIX), shell=True)
+        subprocess.call('samtools index %s.split.q10.sort.bam' % OUTPUT_PREFIX,
+            shell=True)
         logging.info('Quality filter finished.')
     else:
         print 'Sequences already filtered, skipping.'
