@@ -8,6 +8,7 @@ import logging
 
 PIPELINE_PATH = os.path.dirname(os.path.realpath(__file__))
 DEDUPLICATER = os.path.join(PIPELINE_PATH, 'sc_atac_true_dedup.py')
+PICARD = os.path.join(PIPELINE_PATH, 'picard-tools-1.141/picard.jar')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='A program to aggregate mapped bams from sequencing runs and run hotspot for scATAC-seq analysis.')
@@ -17,6 +18,8 @@ if __name__ == '__main__':
     parser.add_argument('-C','--barcodes', help='Barcodes combinations allowed in a text file, if none provided, no filtering on possible barcodes.', required=False, dest='barcodes', default="None")
     parser.add_argument('--run_hotspot', action='store_true',
         help='Create tag file and run hotspot with default conditions')
+    parser.add_argument('--no_complexity', action='store_true',
+        help='Add flag if you would like to skip running picard tools EstimateLibraryComplexity')
     parser.add_argument('--force_overwrite_all', action='store_true',
         help='Force overwrite of all steps of pipeline regardless of files '
         'already present.')
@@ -38,6 +41,8 @@ if __name__ == '__main__':
         subprocess.call('samtools merge %s.merge.bam %s' % (OUTPUT_PREFIX, ' '.join(args.bamlist)), shell=True)
         subprocess.call('samtools index %s.merge.bam' % OUTPUT_PREFIX, shell=True)
         logging.info('Merge ended.')
+        if not args.no_complexity:
+            subprocess.call('java -jar %s EstimateLibraryComplexity I=%s.merge.bam O=%s.complexity_metrics.txt QUIET=true' % (PICARD, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
 
     else:
         print 'Bams already merged, skipping.'
