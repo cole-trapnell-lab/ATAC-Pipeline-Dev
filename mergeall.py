@@ -90,3 +90,22 @@ if __name__ == '__main__':
     if args.run_hotspot and (not os.path.exists(OUTPUT_PREFIX +
         ".hotspot_tags.bed") or args.force_overwrite_all):
         subprocess.call('''awk {'if ($6 == "-") print $1 "\t" $3 "\t" ($3+1) "\t" $4; else print $1 "\t" $2 "\t" ($2+1) "\t" $4'} %s | bedToBam -i - -g %s/human.hg19.genome > %s.hotspot_tags.bam''' % (after_bc, PIPELINE_PATH, OUTPUT_PREFIX), shell=True)
+        if not os.path.exists(os.path.join(args.outdir, 'hotspot_calls')):
+            os.mkdir(os.path.join(args.outdir, 'hotspot_calls'))
+
+    if args.run_hotspot and (not os.path.join(args.outdir, 'hotspot_calls/', args.prefix, '.hotspot_tags-final'):
+        ".hotspot_tags-final") or args.force_overwrite_all):
+        hotspot_tokens = "_TAGS_ = %s.hotspot_tags.bam\n_USE_INPUT_ = F\n_GENOME_ = hg19\n_K_ = 36\n_CHROM_FILE_ = %s/hotspot-distr/data/hg19.chromInfo.bed\n_MAPPABLE_FILE_ = %s/hotspot-distr/data/hg19.K36.mappable_only.bed.starch\n_DUPOK_ = T\n_FDRS_ = '0.01'\n_DENS_:\n_OUTDIR_ = %s\n_RANDIR_ = %s\n_OMIT_REGIONS_: %s/hotspot-distr/data/Satellite.hg19.bed\n_CHECK_ = T\n_CHKCHR_ = chrX\n_HOTSPOT_ = %s/hotspot-distr/hotspot-deploy/bin/hotspot\n_CLEAN_ = T\n_PKFIND_BIN_ = %s/hotspot-distr/hotspot-deploy/bin/wavePeaks\n_PKFIND_SMTH_LVL_ = 3\n_SEED_=101\n_THRESH_ = 2\n_WIN_MIN_ = 200\n_WIN_MAX_ = 300\n_WIN_INCR_ = 50\n_BACKGRD_WIN_ = 50000\n_MERGE_DIST_ = 150\n_MINSIZE_ = 10\n" % (OUTPUT_PREFIX, PIPELINE_PATH, PIPELINE_PATH, os.path.join(args.outdir, 'hotspot_calls'), os.path.join(args.outdir, 'hotspot_calls'), PIPELINE_PATH, PIPELINE_PATH )
+
+        hotspot_file = open(os.path.join(args.outdir, "runall.tokens.txt"), 'w')
+        hotspot_file.write(hotspot_tokens)
+        hotspot_file.close()
+
+        rh = "#! /usr/bin/env bash\nset -e -o pipefail\nscriptTokBin=%s/hotspot-distr/ScriptTokenizer/src/script-tokenizer.py\npipeDir=%s/hotspot-distr/pipeline-scripts\ntokenFile=%s\nscripts='$pipeDir/run_badspot\n$pipeDir/run_make_lib\n$pipeDir/run_wavelet_peak_finding\n$pipeDir/run_10kb_counts\n$pipeDir/run_generate_random_lib\n$pipeDir/run_pass1_hotspot\n$pipeDir/run_pass1_merge_and_thresh_hotspots\n$pipeDir/run_pass2_hotspot\n$pipeDir/run_rescore_hotspot_passes\n$pipeDir/run_spot\n$pipeDir/run_thresh_hot.R\n$pipeDir/run_both-passes_merge_and_thresh_hotspots\n$pipeDir/run_add_peaks_per_hotspot\n$pipeDir/run_final'\n\n$scriptTokBin --clobber --output-dir=`pwd` $tokenFile $scripts\n\nfor script in $scripts\ndo\n\t./$(basename $script).tok\ndone" %(PIPELINE_PATH, PIPELINE_PATH, os.path.join(args.outdir, "runall.tokens.txt"))
+
+        hotspot_run = open(os.path.join(args.outdir, "runhotspot"), 'w')
+        hotspot_run.write(rh)
+        hotspot_run.close()
+
+        subprocess.call(os.path.join(args.outdir, 'runhotspot'), shell=True)
+        
