@@ -88,7 +88,7 @@ if __name__ == '__main__':
         subprocess.call("awk '{h[$4]++}; END { for(k in h) print k, h[k] }'  %s > %s.cell_read_counts.txt" % (after_bc, OUTPUT_PREFIX), shell=True)
 
     if args.run_hotspot and (not os.path.exists(OUTPUT_PREFIX +
-        ".hotspot_tags.bed") or args.force_overwrite_all):
+        ".hotspot_tags.bam") or args.force_overwrite_all):
         subprocess.call('''awk {'if ($6 == "-") print $1 "\t" $3 "\t" ($3+1) "\t" $4; else print $1 "\t" $2 "\t" ($2+1) "\t" $4'} %s | bedToBam -i - -g %s/human.hg19.genome > %s.hotspot_tags.bam''' % (after_bc, PIPELINE_PATH, OUTPUT_PREFIX), shell=True)
         if not os.path.exists(os.path.join(args.outdir, 'hotspot_calls')):
             os.mkdir(os.path.join(args.outdir, 'hotspot_calls'))
@@ -108,4 +108,3 @@ if __name__ == '__main__':
         hotspot_run.close()
 
         subprocess.call(os.path.join(args.outdir, 'runhotspot'), shell=True)
-        
