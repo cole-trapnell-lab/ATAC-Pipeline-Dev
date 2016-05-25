@@ -101,10 +101,17 @@ if __name__ == '__main__':
         hotspot_file.write(hotspot_tokens)
         hotspot_file.close()
 
-        rh = "#! /usr/bin/env bash\nset -e -o pipefail\nscriptTokBin=%s/hotspot-distr/ScriptTokenizer/src/script-tokenizer.py\npipeDir=%s/hotspot-distr/pipeline-scripts\ntokenFile=%s\nscripts='$pipeDir/run_badspot\n$pipeDir/run_make_lib\n$pipeDir/run_wavelet_peak_finding\n$pipeDir/run_10kb_counts\n$pipeDir/run_generate_random_lib\n$pipeDir/run_pass1_hotspot\n$pipeDir/run_pass1_merge_and_thresh_hotspots\n$pipeDir/run_pass2_hotspot\n$pipeDir/run_rescore_hotspot_passes\n$pipeDir/run_spot\n$pipeDir/run_thresh_hot.R\n$pipeDir/run_both-passes_merge_and_thresh_hotspots\n$pipeDir/run_add_peaks_per_hotspot\n$pipeDir/run_final'\n\n$scriptTokBin --clobber --output-dir=`pwd` $tokenFile $scripts\n\nfor script in $scripts\ndo\n\t./$(basename $script).tok\ndone" %(PIPELINE_PATH, PIPELINE_PATH, os.path.join(args.outdir, "runall.tokens.txt"))
+        rh = "#! /usr/bin/env bash\nset -e -o pipefail\nscriptTokBin=%s/hotspot-distr/ScriptTokenizer/src/script-tokenizer.py\npipeDir=%s/hotspot-distr/pipeline-scripts\ntokenFile=%s\nscripts='$pipeDir/run_badspot\n$pipeDir/run_make_lib\n$pipeDir/run_wavelet_peak_finding\n$pipeDir/run_10kb_counts\n$pipeDir/run_generate_random_lib\n$pipeDir/run_pass1_hotspot\n$pipeDir/run_pass1_merge_and_thresh_hotspots\n$pipeDir/run_pass2_hotspot\n$pipeDir/run_rescore_hotspot_passes\n$pipeDir/run_spot\n$pipeDir/run_thresh_hot.R\n$pipeDir/run_both-passes_merge_and_thresh_hotspots\n$pipeDir/run_add_peaks_per_hotspot\n$pipeDir/run_final'\n\n$scriptTokBin --clobber --output-dir=args.outdir $tokenFile $scripts\n\nfor script in $scripts\ndo\n\t./$(basename $script).tok\ndone" %(PIPELINE_PATH, PIPELINE_PATH, os.path.join(args.outdir, "runall.tokens.txt"))
 
         hotspot_run = open(os.path.join(args.outdir, "runhotspot"), 'w')
         hotspot_run.write(rh)
         hotspot_run.close()
 
         subprocess.call(os.path.join(args.outdir, 'runhotspot'), shell=True)
+
+    if args.run_hotspot and not os.path.exists(OUTPUT_PREFIX + ".intersect_hotspot_counts.bed":
+        subprocess.call("bedtools merge -d 150 -c 1 -o count -i %s > %s" % (OUTPUT_PREFIX + ".hotspot_tags-final/" + args.prefix + ".hotspot_tags.fdr0.01.pks.bed", OUTPUT_PREFIX + ".hotspot_merge_pks.bed"), shell=True)
+
+        subprocess.call("bedtools intersect -b %s -a %s -wa -wb > %s" % (after_bc, OUTPUT_PREFIX + ".hotspot_merge_pks.bed", OUTPUT_PREFIX + ".hotspot_intersect.bed"), shell=True)
+
+        subprocess.call('''awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $8}' %s | awk '{h[$0]++}; END { for(k in h) print k, h[k] }' > %s''' % (OUTPUT_PREFIX + ".hotspot_intersect.bed", OUTPUT_PREFIX + ".intersect_hotspot_counts.bed"), shell=True)
