@@ -41,7 +41,7 @@ if __name__ == '__main__':
     logging.basicConfig(filename= OUTPUT_PREFIX + '.log',format='%(asctime)s '
         '%(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
     logging.info('Pipeline started.')
-
+    
     # Make sorted bed file from all bams
     if not os.path.exists(OUTPUT_PREFIX + ".merge.bam") or \
         args.force_overwrite_all:
@@ -57,7 +57,7 @@ if __name__ == '__main__':
             OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
 
     else:
-        print 'Bams already merged, skipping.'
+        print ('Bams already merged, skipping.')
         logging.info('Merge skipped.')
 
     if not os.path.exists(OUTPUT_PREFIX + ".true.nodups.bam"):
@@ -72,7 +72,7 @@ if __name__ == '__main__':
         logging.info('Deduplication ended.')
 
     else:
-        print 'Sequences already deduplicating, skipping.'
+        print ('Sequences already deduplicated, skipping.')
         logging.info('Deduplication skipped.')
 
     if not os.path.exists(OUTPUT_PREFIX + ".all.bed") or \
@@ -123,7 +123,7 @@ if __name__ == '__main__':
         (not os.path.exists(args.outdir + '/hotspot_calls/' + args.prefix +
         '.hotspot_tags-final') \
         or args.force_overwrite_all):
-        hotspot_tokens = "[script-tokenizer]\n_TAGS_ = %s.hotspot_tags.bam"
+        hotspot_tokens = ("[script-tokenizer]\n_TAGS_ = %s.hotspot_tags.bam"
             "\n_USE_INPUT_ = F\n_GENOME_ = hg19\n_K_ = 36\n_CHROM_FILE_ = "
             "%s/hotspot-distr/data/hg19.chromInfo.bed\n_MAPPABLE_FILE_ = "
             "%s/hotspot-distr/data/hg19.K36.mappable_only.bed.starch\n_DUPOK_ "
@@ -134,7 +134,7 @@ if __name__ == '__main__':
             "_PKFIND_BIN_ = %s/hotspot-distr/hotspot-deploy/bin/wavePeaks\n"
             "_PKFIND_SMTH_LVL_ = 3\n_SEED_=101\n_THRESH_ = 2\n_WIN_MIN_ = 200"
             "\n_WIN_MAX_ = 300\n_WIN_INCR_ = 50\n_BACKGRD_WIN_ = 50000\n"
-            "_MERGE_DIST_ = 150\n_MINSIZE_ = 10\n" % (OUTPUT_PREFIX,
+            "_MERGE_DIST_ = 150\n_MINSIZE_ = 10\n") % (OUTPUT_PREFIX,
             PIPELINE_PATH, PIPELINE_PATH, os.path.join(args.outdir,
             'hotspot_calls'), os.path.join(args.outdir, 'hotspot_calls'),
             PIPELINE_PATH, PIPELINE_PATH, PIPELINE_PATH )
@@ -144,7 +144,7 @@ if __name__ == '__main__':
         hotspot_file.write(hotspot_tokens)
         hotspot_file.close()
 
-        rh = '#! /usr/bin/env bash\nset -e -o pipefail\nscriptTokBin=%s'
+        rh = ('#! /usr/bin/env bash\nset -e -o pipefail\nscriptTokBin=%s'
             '/hotspot-distr/ScriptTokenizer/src/script-tokenizer.py\n'
             'pipeDir=%s/hotspot-distr/pipeline-scripts\ntokenFile=%s\n'
             'scripts="$pipeDir/run_badspot\n$pipeDir/run_make_lib\n'
@@ -157,8 +157,8 @@ if __name__ == '__main__':
             '$pipeDir/run_add_peaks_per_hotspot\n$pipeDir/run_final"\n\n'
             '$scriptTokBin --clobber --output-dir=%s $tokenFile $scripts\n\n'
             'for script in $scripts\ndo\n\t./$(basename $script).tok\ndone'
-            %(PIPELINE_PATH, PIPELINE_PATH, os.path.join(args.outdir,
-            "runall.tokens.txt"),  os.path.join(args.outdir, 'hotspot_calls'))
+            % (PIPELINE_PATH, PIPELINE_PATH, os.path.join(args.outdir,
+            "runall.tokens.txt"),  os.path.join(args.outdir, 'hotspot_calls')))
 
         hotspot_run = open(os.path.join(args.outdir, "runhotspot"), 'w')
         hotspot_run.write(rh)
@@ -180,13 +180,13 @@ if __name__ == '__main__':
         subprocess.call("bedtools intersect -b %s -a %s -wa -wb > %s" %
             (after_bc, OUTPUT_PREFIX + ".hotspot_merge_pks.bed", OUTPUT_PREFIX
             + ".hotspot_intersect.bed"), shell=True)
-
+    
     if args.run_hotspot and \
-        (not os.path.exists(OUTPUT_PREFIX + ".intersect_hotspot_counts") \
-        or args.force_overwrite_all:
-        subprocess.call('''awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $8, '''
+        (not os.path.exists(OUTPUT_PREFIX + ".intersect_hotspot_counts.bed") \
+        or args.force_overwrite_all):
+        subprocess.call('''awk 'BEGIN {OFS="\\t"}; {print $1, $2, $3, $8, '''
             '''$9}' %s | sed 's/.$//' | awk '!x[$0]++' | awk 'BEGIN '''
-            '''{OFS="\t"}; {print $1, $2, $3, $4}' | awk '{h[$0]++}; END { '''
+            '''{OFS="\\t"}; {print $1, $2, $3, $4}' | awk '{h[$0]++}; END { '''
             '''for(k in h) print k, h[k] }' > %s''' % (OUTPUT_PREFIX +
             ".hotspot_intersect.bed", OUTPUT_PREFIX + 
             ".intersect_hotspot_counts.bed"), shell=True)
