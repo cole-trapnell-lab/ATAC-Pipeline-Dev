@@ -106,23 +106,23 @@ def clean_and_correct((ifile, fastqpath)):
                             plus_line2 = next(r)
                             qual_line2 = next(r)
                             continue
-						read_line = next(f)
-						plus_line = next(f)
-						qual_line = next(f)
-						b1 = tag_line[0:8]
-						b2 = tag_line[8:18]
-						b4 = reverseComplement(tag_line[18:26])
-						b3 = reverseComplement(tag_line[26:36])
-						if b1 in NEX_I7:
-							b1_cor = [b1]
-						else:
-							b1_cor = difflib.get_close_matches(b1, NEX_I7)
-						if b2 in PCR_I7:
-							b2_cor = [b2]
-						else:
-							b2_cor = difflib.get_close_matches(b2, PCR_I7, 1)
-						if b3 in PCR_I5:
-							b3_cor = [b3]
+                        read_line = next(f)
+			plus_line = next(f)
+			qual_line = next(f)
+			b1 = tag_line[0:8]
+			b2 = tag_line[8:18]
+			b4 = reverseComplement(tag_line[18:26])
+			b3 = reverseComplement(tag_line[26:36])
+			if b1 in NEX_I7:
+			    b1_cor = [b1]
+			else:
+			    b1_cor = difflib.get_close_matches(b1, NEX_I7)
+			if b2 in PCR_I7:
+	            	    b2_cor = [b2]
+			else:
+		            b2_cor = difflib.get_close_matches(b2, PCR_I7, 1)
+			if b3 in PCR_I5:
+			    b3_cor = [b3]
 						else:
 							b3_cor = difflib.get_close_matches(b3, PCR_I5, 1)
 						if b4 in NEX_I5:

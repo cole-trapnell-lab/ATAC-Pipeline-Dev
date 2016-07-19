@@ -96,7 +96,7 @@ if __name__ == '__main__':
             args.force_overwrite_all or \
             args.force_overwrite_bcl2fastq:
 
-            print 'Starting bcl2fastq...'
+            print('Starting bcl2fastq...')
             logging.info('bcl2fastq started.')
 	    bcl2fastq_command = ('module load modules modules-init modules-gs '
                 'bcl2fastq/2.16 fastqc/0.10.1; bcl2fastq --runfolder-dir %s '
