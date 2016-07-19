@@ -90,16 +90,16 @@ def reverseComplement(seq):
 	return "".join([seq_dict[base] for base in reversed(seq)])
 
 def clean_and_correct((ifile, fastqpath)):
-	fileR1 = ifile
-	fileR2 = ifile.replace('R1','R2', 1)
-	kept = 0
-	with gzip.open(os.path.join(fastqpath, fileR1), 'rb') as f:
-		with gzip.open(os.path.join(fastqpath, fileR2), 'rb') as r:
-			with gzip.open(fileR1 + '.out.fq.gz', 'ab') as o:
-				with gzip.open(fileR2 + '.out.fq.gz', 'ab') as g:
-					for tag_line in f:
-						tag_line = tag_line.strip().split()[1].split(':')\
-                            [3].replace('+','')
+    fileR1 = ifile
+    fileR2 = ifile.replace('R1','R2', 1)
+    kept = 0
+    with gzip.open(os.path.join(fastqpath, fileR1), 'rb') as f:
+        with gzip.open(os.path.join(fastqpath, fileR2), 'rb') as r:
+            with gzip.open(fileR1 + '.out.fq.gz', 'ab') as o:
+                with gzip.open(fileR2 + '.out.fq.gz', 'ab') as g:
+                    for tag_line in f:
+                        tag_line = tag_line.strip().split()[1].split(':')\
+                        [3].replace('+','')
                         if len(tag_line != 36):
                             tag_line2 = next(r)
                             read_line2 = next(r)
@@ -107,47 +107,47 @@ def clean_and_correct((ifile, fastqpath)):
                             qual_line2 = next(r)
                             continue
                         read_line = next(f)
-			plus_line = next(f)
-			qual_line = next(f)
-			b1 = tag_line[0:8]
-			b2 = tag_line[8:18]
-			b4 = reverseComplement(tag_line[18:26])
-			b3 = reverseComplement(tag_line[26:36])
-			if b1 in NEX_I7:
-			    b1_cor = [b1]
-			else:
-			    b1_cor = difflib.get_close_matches(b1, NEX_I7)
-			if b2 in PCR_I7:
-	            	    b2_cor = [b2]
-			else:
-		            b2_cor = difflib.get_close_matches(b2, PCR_I7, 1)
-			if b3 in PCR_I5:
-			    b3_cor = [b3]
-						else:
-							b3_cor = difflib.get_close_matches(b3, PCR_I5, 1)
-						if b4 in NEX_I5:
-							b4_cor = [b4]
-						else:
-							b4_cor = difflib.get_close_matches(b4, NEX_I5, 1)
-						cor_barcode = ''.join(b1_cor + b2_cor + b3_cor +
+                        plus_line = next(f)
+                        qual_line = next(f)
+                        b1 = tag_line[0:8]
+                        b2 = tag_line[8:18]
+                        b4 = reverseComplement(tag_line[18:26])
+                        b3 = reverseComplement(tag_line[26:36])
+                        if b1 in NEX_I7:
+                            b1_cor = [b1]
+                        else:
+                            b1_cor = difflib.get_close_matches(b1, NEX_I7)
+                        if b2 in PCR_I7:
+                            b2_cor = [b2]
+                        else:
+                            b2_cor = difflib.get_close_matches(b2, PCR_I7, 1)
+                        if b3 in PCR_I5:
+                            b3_cor = [b3]
+                        else:
+                            b3_cor = difflib.get_close_matches(b3, PCR_I5, 1)
+                        if b4 in NEX_I5:
+                            b4_cor = [b4]
+                        else:
+                            b4_cor = difflib.get_close_matches(b4, NEX_I5, 1)
+                        cor_barcode = ''.join(b1_cor + b2_cor + b3_cor +
                             b4_cor)
-						tag_new = ''.join(b1 + b2 + b3 + b4)
-						edit_dist = hamming(cor_barcode, tag_new)
-						tag_line2 = next(r)
-						read_line2 = next(r)
-						plus_line2 = next(r)
-						qual_line2 = next(r)
-						if edit_dist <= 3:
-							kept += 1
-							content = ('@' + cor_barcode + ':' + str(kept) + '#'
-                                + str(edit_dist) + '/1' + '\n' + read_line +
-                                plus_line + qual_line)
-							content2 = ('@' + cor_barcode + ':' + str(kept) +
-                                '#' + str(edit_dist) + '/1' + '\n' + read_line2
-                                 + plus_line2 + qual_line2)
-							o.write(content)
-							g.write(content2)
-	return kept
+                        tag_new = ''.join(b1 + b2 + b3 + b4)
+                        edit_dist = hamming(cor_barcode, tag_new)
+                        tag_line2 = next(r)
+                        read_line2 = next(r)
+                        plus_line2 = next(r)
+                        qual_line2 = next(r)
+                        if edit_dist <= 3:
+                            kept += 1
+                        content = ('@' + cor_barcode + ':' + str(kept) + '#'
+                            + str(edit_dist) + '/1' + '\n' + read_line +
+                            plus_line + qual_line)
+                        content2 = ('@' + cor_barcode + ':' + str(kept) +
+                            '#' + str(edit_dist) + '/1' + '\n' + read_line2
+                            + plus_line2 + qual_line2)
+                        o.write(content)
+                        g.write(content2)
+    return kept
 
 
 if __name__ == '__main__':
