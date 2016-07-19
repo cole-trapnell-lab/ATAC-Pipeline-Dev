@@ -17,6 +17,8 @@ import logging
 PIPELINE_PATH = os.path.dirname(os.path.realpath(__file__))
 
 BARCODE_CORRECTER = os.path.join(PIPELINE_PATH, 'barcode_correct_scatac.py')
+BARCODE_CORRECTER_MISEQ = os.path.join(PIPELINE_PATH,
+    'barcode_correct_scatac_miseq.py')
 TRIMMOMATIC = os.path.join(PIPELINE_PATH,
     'Trimmomatic-0.36/trimmomatic-0.36.jar')
 
@@ -41,6 +43,8 @@ if __name__ == '__main__':
         dest='outdir', required=True)
     parser.add_argument('-P','--prefix',help='Output file prefix, otherwise '
         'default(out)', default = "out", dest='prefix', required=False)
+    parser.add_argument('--miseq', help='Run on MiSeq, otherwise assumes '
+        'NextSeq', action='store_true', required=False)
     parser.add_argument('-E','--maxedit', help='Maximum allowed edit distance '
         '(default = 3)', default=3, dest='maxedit', required=False)
     parser.add_argument('-G','--genome', help='Path to genome annotation '
@@ -122,9 +126,14 @@ if __name__ == '__main__':
 
             print "Cleaning and fixing barcodes..."
             logging.info('Barcode corrector started.')
-            subprocess.call('python %s -F %s -o %s -E %s -n %s' %
-                (BARCODE_CORRECTER, FASTQ_DIRECTORY, OUTPUT_PREFIX,
-                args.maxedit, args.nthreads), shell=True)
+            if miseq:
+                subprocess.call('python %s -F %s -o %s -E %s -n %s' %
+                    (BARCODE_CORRECTER_MISEQ, FASTQ_DIRECTORY, OUTPUT_PREFIX,
+                    args.maxedit, args.nthreads), shell=True)
+            else:
+                subprocess.call('python %s -F %s -o %s -E %s -n %s' %
+                    (BARCODE_CORRECTER, FASTQ_DIRECTORY, OUTPUT_PREFIX,
+                    args.maxedit, args.nthreads), shell=True)
             logging.info('Barcode corrector ended.')
 
         else:
@@ -201,4 +210,3 @@ if __name__ == '__main__':
         logging.info('Quality filter skipped.')
 
     print "Complete."
-    
