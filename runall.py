@@ -68,6 +68,9 @@ if __name__ == '__main__':
         help='Force overwrite trimming regardless of files already present.')
     parser.add_argument('--force_overwrite_mapping', action='store_true',
         help='Force overwrite mapping regardless of files already present.')
+    parser.add_argument('--keep_intermediates',
+        action='store_true', help='Skip clean up steps to keep intermediate '
+        'files.')
     args = parser.parse_args()
 
     # Initialize directories and file prefixes required for the pipeline
@@ -166,13 +169,14 @@ if __name__ == '__main__':
                 '--force_overwrite_all or --force_overwrite_trimming to redo.')
             logging.info('Trimmomatic skipped.')
 
-        print "Cleaning up..."
+        if not args.keep_intermediates:
+            print "Cleaning up..."
 
-        # Remove temporary files created during the pipeline.
-        clean_command = ('rm %s; rm %s; rm %s; rm %s; rm %s/tempR*' %
-            (bar_out1, bar_out2, trimmer_un_out1, trimmer_un_out2,
-            FASTQ_DIRECTORY))
-        subprocess.call(clean_command, shell=True)
+            # Remove temporary files created during the pipeline.
+            clean_command = ('rm %s; rm %s; rm %s; rm %s; rm %s/tempR*' %
+                (bar_out1, bar_out2, trimmer_un_out1, trimmer_un_out2,
+                FASTQ_DIRECTORY))
+            subprocess.call(clean_command, shell=True)
 
     # Submit bowtie mapping only if no existing results or if user wants
     # to overwrite
