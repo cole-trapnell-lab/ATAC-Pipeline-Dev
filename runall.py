@@ -129,7 +129,7 @@ if __name__ == '__main__':
 
             print "Cleaning and fixing barcodes..."
             logging.info('Barcode corrector started.')
-            if miseq:
+            if args.miseq:
                 subprocess.call('python %s -F %s -o %s -E %s -n %s' %
                     (BARCODE_CORRECTER_MISEQ, FASTQ_DIRECTORY, OUTPUT_PREFIX,
                     args.maxedit, args.nthreads), shell=True)
