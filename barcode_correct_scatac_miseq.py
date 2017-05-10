@@ -139,14 +139,14 @@ def clean_and_correct((ifile, fastqpath)):
                         qual_line2 = next(r)
                         if edit_dist <= 3:
                             kept += 1
-                        content = ('@' + cor_barcode + ':' + str(kept) + '#'
-                            + str(edit_dist) + '/1' + '\n' + read_line +
-                            plus_line + qual_line)
-                        content2 = ('@' + cor_barcode + ':' + str(kept) +
-                            '#' + str(edit_dist) + '/1' + '\n' + read_line2
-                            + plus_line2 + qual_line2)
-                        o.write(content)
-                        g.write(content2)
+                            content = ('@' + cor_barcode + ':' + str(kept) + '#'
+                                + str(edit_dist) + '/1' + '\n' + read_line +
+                                plus_line + qual_line)
+                            content2 = ('@' + cor_barcode + ':' + str(kept) +
+                                '#' + str(edit_dist) + '/1' + '\n' + read_line2
+                                + plus_line2 + qual_line2)
+                            o.write(content)
+                            g.write(content2)
     return kept
 
 
