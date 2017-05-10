@@ -23,8 +23,6 @@ if __name__ == '__main__':
     parser.add_argument('-C','--barcodes', help='Barcodes combinations allowed'
         ' in a text file, if none provided, no filtering on possible '
         'barcodes.', required=False, dest='barcodes', default="None")
-    parser.add_argument('--run_hotspot', action='store_true',
-        help='Create tag file and run hotspot with default conditions')
     parser.add_argument('--no_complexity', action='store_true',
         help='Add flag if you would like to skip running picard tools '
         'EstimateLibraryComplexity')
@@ -109,84 +107,3 @@ if __name__ == '__main__':
             after_bc = "%s.bc_only.bed" % OUTPUT_PREFIX
         else:
             after_bc = "%s.bc.bed" % OUTPUT_PREFIX
-
-    if args.run_hotspot and (not os.path.exists(OUTPUT_PREFIX +
-        ".hotspot_tags.bam") or args.force_overwrite_all):
-        subprocess.call('''awk {'if ($6 == "-") print $1 "\t" $3 "\t" ($3+1)'''
-            ''' "\t" $4; else print $1 "\t" $2 "\t" ($2+1) "\t" $4'} %s | '''
-            '''bedToBam -i - -g %s/human.hg19.genome > %s.hotspot_tags.bam''' %
-            (after_bc, PIPELINE_PATH, OUTPUT_PREFIX), shell=True)
-        if not os.path.exists(os.path.join(args.outdir, 'hotspot_calls')):
-            os.mkdir(os.path.join(args.outdir, 'hotspot_calls'))
-
-    if args.run_hotspot and \
-        (not os.path.exists(args.outdir + '/hotspot_calls/' + args.prefix +
-        '.hotspot_tags-final') \
-        or args.force_overwrite_all):
-        hotspot_tokens = ("[script-tokenizer]\n_TAGS_ = %s.hotspot_tags.bam"
-            "\n_USE_INPUT_ = F\n_GENOME_ = hg19\n_K_ = 36\n_CHROM_FILE_ = "
-            "%s/hotspot-distr/data/hg19.chromInfo.bed\n_MAPPABLE_FILE_ = "
-            "%s/hotspot-distr/data/hg19.K36.mappable_only.bed.starch\n_DUPOK_ "
-            "= T\n_FDRS_ = '0.01'\n_DENS_:\n_OUTDIR_ = %s\n_RANDIR_ = %s\n"
-            "_OMIT_REGIONS_: %s/hotspot-distr/data/Satellite.hg19.bed\n"
-            "_CHECK_ = T\n_CHKCHR_ = chrX\n_HOTSPOT_ = "
-            "%s/hotspot-distr/hotspot-deploy/bin/hotspot\n_CLEAN_ = T\n"
-            "_PKFIND_BIN_ = %s/hotspot-distr/hotspot-deploy/bin/wavePeaks\n"
-            "_PKFIND_SMTH_LVL_ = 3\n_SEED_=101\n_THRESH_ = 2\n_WIN_MIN_ = 200"
-            "\n_WIN_MAX_ = 300\n_WIN_INCR_ = 50\n_BACKGRD_WIN_ = 50000\n"
-            "_MERGE_DIST_ = 150\n_MINSIZE_ = 10\n") % (OUTPUT_PREFIX,
-            PIPELINE_PATH, PIPELINE_PATH, os.path.join(args.outdir,
-            'hotspot_calls'), os.path.join(args.outdir, 'hotspot_calls'),
-            PIPELINE_PATH, PIPELINE_PATH, PIPELINE_PATH )
-
-        hotspot_file = open(os.path.join(args.outdir, "runall.tokens.txt"),
-            'w')
-        hotspot_file.write(hotspot_tokens)
-        hotspot_file.close()
-
-        rh = ('#! /usr/bin/env bash\nset -e -o pipefail\nscriptTokBin=%s'
-            '/hotspot-distr/ScriptTokenizer/src/script-tokenizer.py\n'
-            'pipeDir=%s/hotspot-distr/pipeline-scripts\ntokenFile=%s\n'
-            'scripts="$pipeDir/run_badspot\n$pipeDir/run_make_lib\n'
-            '$pipeDir/run_wavelet_peak_finding\n$pipeDir/run_10kb_counts\n'
-            '$pipeDir/run_generate_random_lib\n$pipeDir/run_pass1_hotspot\n'
-            '$pipeDir/run_pass1_merge_and_thresh_hotspots\n'
-            '$pipeDir/run_pass2_hotspot\n$pipeDir/run_rescore_hotspot_passes\n'
-            '$pipeDir/run_spot\n$pipeDir/run_thresh_hot.R\n'
-            '$pipeDir/run_both-passes_merge_and_thresh_hotspots\n'
-            '$pipeDir/run_add_peaks_per_hotspot\n$pipeDir/run_final"\n\n'
-            '$scriptTokBin --clobber --output-dir=%s $tokenFile $scripts\n\n'
-            'for script in $scripts\ndo\n\t./$(basename $script).tok\ndone'
-            % (PIPELINE_PATH, PIPELINE_PATH, os.path.join(args.outdir,
-            "runall.tokens.txt"),  os.path.join(args.outdir, 'hotspot_calls')))
-
-        hotspot_run = open(os.path.join(args.outdir, "runhotspot"), 'w')
-        hotspot_run.write(rh)
-        hotspot_run.close()
-
-        subprocess.call("chmod 775 %s" % os.path.join(args.outdir,
-            "runhotspot"), shell=True)
-        subprocess.call(os.path.join(args.outdir, 'runhotspot'), shell=True)
-
-    if args.run_hotspot and \
-        (not os.path.exists(OUTPUT_PREFIX + ".hotspot_intersect.bed") or \
-        args.force_overwrite_all):
-        subprocess.call("bedtools merge -d 150 -c 1 -o count -i %s > %s" %
-            (args.outdir + "/hotspot_calls/" + args.prefix +
-            ".hotspot_tags-final/" + args.prefix +
-            ".hotspot_tags.fdr0.01.pks.bed", OUTPUT_PREFIX +
-            ".hotspot_merge_pks.bed"), shell=True)
-
-        subprocess.call("bedtools intersect -b %s -a %s -wa -wb > %s" %
-            (after_bc, OUTPUT_PREFIX + ".hotspot_merge_pks.bed", OUTPUT_PREFIX
-            + ".hotspot_intersect.bed"), shell=True)
-    
-    if args.run_hotspot and \
-        (not os.path.exists(OUTPUT_PREFIX + ".intersect_hotspot_counts.bed") \
-        or args.force_overwrite_all):
-        subprocess.call('''awk 'BEGIN {OFS="\\t"}; {print $1, $2, $3, $8, '''
-            '''$9}' %s | sed 's/.$//' | awk '!x[$0]++' | awk 'BEGIN '''
-            '''{OFS="\\t"}; {print $1, $2, $3, $4}' | awk '{h[$0]++}; END { '''
-            '''for(k in h) print k, h[k] }' > %s''' % (OUTPUT_PREFIX +
-            ".hotspot_intersect.bed", OUTPUT_PREFIX + 
-            ".intersect_hotspot_counts.bed"), shell=True)
