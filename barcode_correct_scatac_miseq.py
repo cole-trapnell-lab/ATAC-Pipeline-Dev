@@ -100,7 +100,7 @@ def clean_and_correct((ifile, fastqpath)):
                     for tag_line in f:
                         tag_line = tag_line.strip().split()[1].split(':')\
                         [3].replace('+','')
-                        if len(tag_line != 36):
+			if len(tag_line) != 36:
                             tag_line2 = next(r)
                             read_line2 = next(r)
                             plus_line2 = next(r)
