@@ -166,7 +166,7 @@ if __name__ == '__main__':
 
 
 	# Open barcode correction log
-	log = open(args.outpref + 'barcode_correct_log.txt', 'w')
+	log = open(args.outpref + '.barcode_correct.log', 'w')
 	log_mes = ('{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()) +
         ' Starting processing\n')
 	log.write(str(log_mes))
