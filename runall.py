@@ -1,3 +1,4 @@
+#!/net/gs/vol1/home/hpliner/miniconda2/bin/python
 # Python pipeline to convert NextSeq BCL files to fastq,
 # fix errors in barcodes and trim adapters from fastqs.
 
@@ -130,11 +131,11 @@ if __name__ == '__main__':
             print "Cleaning and fixing barcodes..."
             logging.info('Barcode corrector started.')
             if args.miseq:
-                subprocess.call('python %s -F %s -o %s -E %s -n %s' %
+                subprocess.check_call('python %s -F %s -o %s -E %s -n %s' %
                     (BARCODE_CORRECTER_MISEQ, FASTQ_DIRECTORY, OUTPUT_PREFIX,
                     args.maxedit, args.nthreads), shell=True)
             else:
-                subprocess.call('python %s -F %s -o %s -E %s -n %s' %
+                subprocess.check_call('python %s -F %s -o %s -E %s -n %s' %
                     (BARCODE_CORRECTER, FASTQ_DIRECTORY, OUTPUT_PREFIX,
                     args.maxedit, args.nthreads), shell=True)
             logging.info('Barcode corrector ended.')

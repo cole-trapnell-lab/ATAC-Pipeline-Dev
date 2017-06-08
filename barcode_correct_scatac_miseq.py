@@ -221,3 +221,4 @@ if __name__ == '__main__':
         ' Done\n')
 	log.write(str(log_mes))
 	log.close()
+	return(0)
