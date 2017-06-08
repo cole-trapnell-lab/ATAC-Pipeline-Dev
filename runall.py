@@ -105,12 +105,12 @@ if __name__ == '__main__':
 
             print('Starting bcl2fastq...')
             logging.info('bcl2fastq started.')
-	    bcl2fastq_command = ('module load modules modules-init modules-gs '
+	        bcl2fastq_command = ('module load modules modules-init modules-gs '
                 'bcl2fastq/2.16 fastqc/0.10.1; bcl2fastq --runfolder-dir %s '
                 '-o %s --ignore-missing-filter' % (args.rundir,
                 FASTQ_DIRECTORY))
             f = open(os.path.join(args.outdir, "bcl2fastq_log.txt"), 'w')
-            subprocess.call(bcl2fastq_command, shell=True, stdout = f,
+            subprocess.check_call(bcl2fastq_command, shell=True, stdout = f,
                 stderr=f)
             logging.info('bcl2fastq ended.')
 
@@ -130,11 +130,11 @@ if __name__ == '__main__':
             print "Cleaning and fixing barcodes..."
             logging.info('Barcode corrector started.')
             if args.miseq:
-                subprocess.call('python %s -F %s -o %s -E %s -n %s' %
+                subprocess.check_call('python %s -F %s -o %s -E %s -n %s' %
                     (BARCODE_CORRECTER_MISEQ, FASTQ_DIRECTORY, OUTPUT_PREFIX,
                     args.maxedit, args.nthreads), shell=True)
             else:
-                subprocess.call('python %s -F %s -o %s -E %s -n %s' %
+                subprocess.check_call('python %s -F %s -o %s -E %s -n %s' %
                     (BARCODE_CORRECTER, FASTQ_DIRECTORY, OUTPUT_PREFIX,
                     args.maxedit, args.nthreads), shell=True)
             logging.info('Barcode corrector ended.')
@@ -160,7 +160,7 @@ if __name__ == '__main__':
                 'MINLEN:20' % (TRIMMOMATIC, args.nthreads, bar_out1, bar_out2,
                 trimmer_out1, trimmer_un_out1, trimmer_out2, trimmer_un_out2,
                 PIPELINE_PATH))
-            subprocess.call(trimmer_command, shell=True)
+            subprocess.check_call(trimmer_command, shell=True)
             logging.info('Trimmomatic ended.')
 
         else:
@@ -176,7 +176,7 @@ if __name__ == '__main__':
             clean_command = ('rm %s; rm %s; rm %s; rm %s; rm %s/tempR*' %
                 (bar_out1, bar_out2, trimmer_un_out1, trimmer_un_out2,
                 FASTQ_DIRECTORY))
-            subprocess.call(clean_command, shell=True)
+            subprocess.check_call(clean_command, shell=True)
 
     # Submit bowtie mapping only if no existing results or if user wants
     # to overwrite
@@ -186,11 +186,7 @@ if __name__ == '__main__':
 
         logging.info('Bowtie2 started.')
         print "Starting mapping..."
-        print ('bowtie2 --un-conc-gz %s.unaligned.fq.gz -X 1000 -p %s'
-            '-x %s -1 %s -2 %s | samtools view -Sb - > %s.split.bam' %
-            (OUTPUT_PREFIX, args.nthreads, args.genome, trimmer_out1,
-            trimmer_out2, OUTPUT_PREFIX))
-	subprocess.call('bowtie2 --un-conc-gz %s.unaligned.fq.gz -X 1000 -p %s '
+	    subprocess.check_call('bowtie2 --un-conc-gz %s.unaligned.fq.gz -X 1000 -p %s '
             '-x %s -1 %s -2 %s | samtools view -Sb - > %s.split.bam' %
             (OUTPUT_PREFIX, args.nthreads, args.genome, trimmer_out1,
             trimmer_out2, OUTPUT_PREFIX), shell=True)
@@ -206,11 +202,11 @@ if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PREFIX + ".split.q10.sort.bam"):
         print "Filtering low quality reads..."
         logging.info('Quality filter started.')
-        subprocess.call("samtools view -h -f3 -F12 -q10 %s.split.bam | grep "
+        subprocess.check_call("samtools view -h -f3 -F12 -q10 %s.split.bam | grep "
             " -v '\tchrM\t' | samtools sort -T %s.sorttemp -@ %s - -o "
             "%s.split.q10.sort.bam" % (OUTPUT_PREFIX, OUTPUT_PREFIX,
             args.nthreads, OUTPUT_PREFIX), shell=True)
-        subprocess.call('samtools index %s.split.q10.sort.bam' % OUTPUT_PREFIX,
+        subprocess.check_call('samtools index %s.split.q10.sort.bam' % OUTPUT_PREFIX,
             shell=True)
         logging.info('Quality filter finished.')
     else:
