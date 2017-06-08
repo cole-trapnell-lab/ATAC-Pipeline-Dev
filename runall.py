@@ -1,3 +1,4 @@
+#!/net/gs/vol1/home/hpliner/miniconda2/bin/python
 # Python pipeline to convert NextSeq BCL files to fastq,
 # fix errors in barcodes and trim adapters from fastqs.
 
