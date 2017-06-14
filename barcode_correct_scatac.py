@@ -93,24 +93,22 @@ def clean_and_correct((ifile, fastqpath)):
     fileR1 = ifile
     fileR2 = ifile.replace('R1','R2', 1)
     kept = 0
-    with gzip.open(os.path.join(fastqpath, fileR1), 'rb') as f:
-        with gzip.open(os.path.join(fastqpath, fileR2), 'rb') as r:
+    with gzip.open(fileR1, 'rb') as f:
+        with gzip.open(fileR2, 'rb') as r:
             with gzip.open(fileR1 + '.out.fq.gz', 'ab') as o:
                 with gzip.open(fileR2 + '.out.fq.gz', 'ab') as g:
-		    print "here"
 		    for tag_line in f:
-			print tag_line
 			tag_line = tag_line.strip().split()[1].split(':')[3].replace('+','')
-                        if len(tag_line) != 36:
-                            tag_line2 = next(r)
-                            read_line2 = next(r)
-                            plus_line2 = next(r)
-                            qual_line2 = next(r)
-                            continue
+			if len(tag_line) != 36:
+                        	tag_line2 = next(r)
+				read_line2 = next(r)
+				plus_line2 = next(r)
+				qual_line2 = next(r)
+                           	continue
                         read_line = next(f)
                         plus_line = next(f)
                         qual_line = next(f)
-                        b1 = tag_line[0:8]
+			b1 = tag_line[0:8]
                         b2 = tag_line[8:18]
                         b4 = reverseComplement(tag_line[18:26])
                         b3 = reverseComplement(tag_line[26:36])
@@ -204,9 +202,7 @@ if __name__ == '__main__':
 		print 'split2 already exists, moving on'
 
 	if not os.path.exists(args.fastqpath + '/tempR10.fq0000.gz.out.fq.gz'):
-		kept_list = clean_and_correct((file_names1[1], args.fastqpath))
-		#kept_list = pool.map(clean_and_correct, zip(file_names1[1],repeat(args.fastqpath)))
-		print kept_list
+		kept_list = pool.map(clean_and_correct, zip(file_names1,repeat(args.fastqpath)))
 		log_mes = "Sequences kept: " + str(sum(kept_list)) + "\n"
 		log.write(log_mes)
 	else:

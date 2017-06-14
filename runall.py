@@ -106,7 +106,7 @@ if __name__ == '__main__':
 
             print('Starting bcl2fastq...')
             logging.info('bcl2fastq started.')
-	        bcl2fastq_command = ('module load modules modules-init modules-gs '
+	    bcl2fastq_command = ('module load modules modules-init modules-gs '
                 'bcl2fastq/2.16 fastqc/0.10.1; bcl2fastq --runfolder-dir %s '
                 '-o %s --ignore-missing-filter' % (args.rundir,
                 FASTQ_DIRECTORY))
@@ -187,7 +187,7 @@ if __name__ == '__main__':
 
         logging.info('Bowtie2 started.')
         print "Starting mapping..."
-	    subprocess.check_call('bowtie2 --un-conc-gz %s.unaligned.fq.gz -X 1000 -p %s '
+	subprocess.check_call('bowtie2 --un-conc-gz %s.unaligned.fq.gz -X 1000 -p %s '
             '-x %s -1 %s -2 %s | samtools view -Sb - > %s.split.bam' %
             (OUTPUT_PREFIX, args.nthreads, args.genome, trimmer_out1,
             trimmer_out2, OUTPUT_PREFIX), shell=True)
