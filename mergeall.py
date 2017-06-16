@@ -1,3 +1,4 @@
+#!/net/gs/vol1/home/hpliner/miniconda2/bin/python
 import argparse
 import os
 import subprocess
@@ -60,7 +61,7 @@ if __name__ == '__main__':
 
     if not os.path.exists(OUTPUT_PREFIX + ".true.nodups.bam"):
         logging.info('Deduplication started.')
-        subprocess.call('python %s %s.merge.bam %s.true.nodups.bam' %
+        subprocess.check_call('%s %s.merge.bam %s.true.nodups.bam' %
             (DEDUPLICATER, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
         subprocess.call('samtools view %s.true.nodups.bam | sort -u -k1,1 | '
             'cut -f9 > %s.insertsize.txt' % (OUTPUT_PREFIX, OUTPUT_PREFIX),

@@ -35,8 +35,8 @@ def initialize_directories(pipeline_root_directory):
 
 # main function
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='A program to convert NextSeq'
-        ' BCL files to cleaned and corrected fastq files for scATAC-seq '
+    parser = argparse.ArgumentParser(description='A program to convert'
+        ' BCL files to cleaned, corrected and mapped BAM files for sci-ATAC-seq '
         'analysis.')
     parser.add_argument('-R','--rundir', help='Run directory containing BCL '
         'files', dest='rundir', required=True)
@@ -108,8 +108,8 @@ if __name__ == '__main__':
             logging.info('bcl2fastq started.')
 	    bcl2fastq_command = ('module load modules modules-init modules-gs '
                 'bcl2fastq/2.16 fastqc/0.10.1; bcl2fastq --runfolder-dir %s '
-                '-o %s --ignore-missing-filter' % (args.rundir,
-                FASTQ_DIRECTORY))
+                '-o %s --no-lane-splitting --sample-sheet %s' % (args.rundir,
+                FASTQ_DIRECTORY, FASTQ_DIRECTORY))
             f = open(os.path.join(args.outdir, "bcl2fastq_log.txt"), 'w')
             subprocess.check_call(bcl2fastq_command, shell=True, stdout = f,
                 stderr=f)

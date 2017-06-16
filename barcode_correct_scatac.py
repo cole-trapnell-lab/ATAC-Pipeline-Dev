@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/net/gs/vol1/home/hpliner/miniconda2/bin/python
 ##
 ##	barcode_correct_scatac.py
 ##

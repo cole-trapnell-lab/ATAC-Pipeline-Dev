@@ -1,3 +1,4 @@
+#!/net/gs/vol1/home/hpliner/miniconda2/bin/python
 import pysam   #/0.8.1
 import sys
 
