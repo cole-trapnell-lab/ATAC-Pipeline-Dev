@@ -17,9 +17,9 @@ import logging
 # Construct paths to pipeline scripts as constants
 PIPELINE_PATH = os.path.dirname(os.path.realpath(__file__))
 
-BARCODE_CORRECTER = os.path.join(PIPELINE_PATH, 'barcode_correct_scatac.py')
+BARCODE_CORRECTER = os.path.join(PIPELINE_PATH, 'src/barcode_correct_scatac.py')
 BARCODE_CORRECTER_MISEQ = os.path.join(PIPELINE_PATH,
-    'barcode_correct_scatac_miseq.py')
+    'src/barcode_correct_scatac_miseq.py')
 TRIMMOMATIC = os.path.join(PIPELINE_PATH,
     'Trimmomatic-0.36/trimmomatic-0.36.jar')
 
