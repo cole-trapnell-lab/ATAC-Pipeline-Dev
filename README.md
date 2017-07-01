@@ -1,7 +1,13 @@
 #Single-cell ATAC-seq Read Processing Pipeline
 The purpose of this pipeline is to get reads from bcl (directly off the illumina machines) to a peak by cell matrix. Currently, this pipeline takes care of the first step: running bcl2fastq, and cleaning up and correcting barcodes. Upcoming are additions to run map reads, run hotspot, and make an overlap matrix. I am still very actively debugging, so report issues if you have them.
 
-###System Requirements
+###Installation:
+`module load julia/latest`
+`julia
+Pkg.clone("https://github.com/hpliner/Levenshtein.jl.git")
+Pkg.add("GZip")
+Pkg.add("ArgParse")`
+
 Currently, this must be run on the lab cluster because it recruits cluster modules.
 Requires the following modules, add this to your path:
 `module load coreutils/8.24`
