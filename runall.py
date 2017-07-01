@@ -17,9 +17,7 @@ import logging
 # Construct paths to pipeline scripts as constants
 PIPELINE_PATH = os.path.dirname(os.path.realpath(__file__))
 
-BARCODE_CORRECTER = os.path.join(PIPELINE_PATH, 'src/barcode_correct_scatac.py')
-BARCODE_CORRECTER_MISEQ = os.path.join(PIPELINE_PATH,
-    'src/barcode_correct_scatac_miseq.py')
+BARCODE_CORRECTER = os.path.join(PIPELINE_PATH, 'src/barcode_correct_scatac.jl')
 TRIMMOMATIC = os.path.join(PIPELINE_PATH,
     'Trimmomatic-0.36/trimmomatic-0.36.jar')
 
@@ -130,14 +128,9 @@ if __name__ == '__main__':
 
             print "Cleaning and fixing barcodes..."
             logging.info('Barcode corrector started.')
-            if args.miseq:
-                subprocess.check_call('python %s -F %s -o %s -E %s -n %s' %
-                    (BARCODE_CORRECTER_MISEQ, FASTQ_DIRECTORY, OUTPUT_PREFIX,
-                    args.maxedit, args.nthreads), shell=True)
-            else:
-                subprocess.check_call('python %s -F %s -o %s -E %s -n %s' %
-                    (BARCODE_CORRECTER, FASTQ_DIRECTORY, OUTPUT_PREFIX,
-                    args.maxedit, args.nthreads), shell=True)
+            subprocess.check_call('julia %s -F %s -o %s -E %s -n %s' %
+                (BARCODE_CORRECTER, FASTQ_DIRECTORY, OUTPUT_PREFIX,
+                args.maxedit, args.nthreads), shell=True)
             logging.info('Barcode corrector ended.')
 
         else:
