@@ -128,9 +128,14 @@ if __name__ == '__main__':
 
             print "Cleaning and fixing barcodes..."
             logging.info('Barcode corrector started.')
-            subprocess.check_call('julia %s -F %s -o %s -E %s -n %s' %
-                (BARCODE_CORRECTER, FASTQ_DIRECTORY, OUTPUT_PREFIX,
-                args.maxedit, args.nthreads), shell=True)
+            if args.miseq:
+                subprocess.check_call('julia %s -F %s -o %s -E %s -n %s --miseq' %
+                    (BARCODE_CORRECTER, FASTQ_DIRECTORY, OUTPUT_PREFIX,
+                    args.maxedit, args.nthreads), shell=True)
+            else:
+                subprocess.check_call('julia %s -F %s -o %s -E %s -n %s' %
+                    (BARCODE_CORRECTER, FASTQ_DIRECTORY, OUTPUT_PREFIX,
+                    args.maxedit, args.nthreads), shell=True)
             logging.info('Barcode corrector ended.')
 
         else:

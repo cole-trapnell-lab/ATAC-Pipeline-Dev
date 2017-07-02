@@ -22,7 +22,6 @@ function parse_commandline()
         "--miseq"
             help = "Was this a miseq run?"
             action = :store_true
-            required = true
         "--maxedit", "-e"
             help = "Max allowed edit distance"
             arg_type = Int
@@ -127,6 +126,10 @@ function do_correction(bc::AbstractString, possibles, max_edit::Int64, min_runne
 end
 
 function main()
+    perfect = 0
+    corrected = 0
+    fail = 0
+    total = 0
     parsed_args = parse_commandline()
     fastq_files = readdir(parsed_args["fastq"])
     max_edit = parsed_args["maxedit"]
@@ -138,9 +141,12 @@ function main()
     fileR2 = replace(ifile, "R1","R2")
     o = GZip.gzopen(string(fileR1, ".out.fq.gz"), "w")
     g = GZip.gzopen(string(fileR2, ".out.fq.gz"), "w")
+    log = open(string(parsed_args["fastq"], "/barcode_correct.log", ), "w")
+    write(log, "failed\tcorrected\tperfect\ttotal\n")
     GZip.gzopen(fileR1, "r") do f
         GZip.gzopen(fileR2, "r") do r
             while !eof(f)
+                total += 1
                 tag_line::AbstractString = readline(f)
                 read_line::AbstractString = readline(f)
                 plus_line::AbstractString = readline(f)
@@ -151,6 +157,7 @@ function main()
                 plus_line2::AbstractString = readline(r)
                 qual_line2::AbstractString = readline(r)
                 if length(tag_line) != 36
+                    fail += 1
                     continue
                 end
                 b1::AbstractString = tag_line[1:8]
@@ -164,6 +171,7 @@ function main()
                 end
                 ori_barcode::AbstractString = b1 * b2 * b3 * b4
                 if haskey(FULL_BARC, ori_barcode)
+                    perfect += 1
                     content = string("@", ori_barcode, ":0\n", read_line,
                         plus_line,  qual_line)
                     content2 = string("@", ori_barcode, ":0\n", read_line2,
@@ -174,20 +182,25 @@ function main()
                 end
                 b1_cor::AbstractString = do_correction(b1, NEX_I7, max_edit, min_runner_up)
                 if b1_cor == "barcode_fail"
+                    fail += 1
                     continue
                 end
                 b2_cor::AbstractString = do_correction(b2, PCR_I7, max_edit, min_runner_up)
                 if b2_cor == "barcode_fail"
+                    fail += 1
                     continue
                 end
                 b3_cor::AbstractString = do_correction(b3, PCR_I5, max_edit, min_runner_up)
                 if b3_cor == "barcode_fail"
+                    fail += 1
                     continue
                 end
                 b4_cor::AbstractString = do_correction(b4, NEX_I5, max_edit, min_runner_up)
                 if b4_cor == "barcode_fail"
+                    fail += 1
                     continue
                 end
+                corrected += 1
                 cor_barcode::AbstractString = b1_cor * b2_cor * b3_cor * b4_cor
                 edit_dist = levenshtein(cor_barcode, ori_barcode)
                 content::AbstractString = string("@", cor_barcode, ":",
@@ -203,6 +216,8 @@ function main()
     end
     close(o)
     close(g)
+    write(log, string(fail, "\t", corrected, "\t", perfect, "\t", total))
+    close(log)
 end
 
 
