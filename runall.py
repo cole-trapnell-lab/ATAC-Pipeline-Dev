@@ -79,12 +79,12 @@ if __name__ == '__main__':
 
     bcl_out1 = FASTQ_DIRECTORY + '/Undetermined_S0_R1_001.fastq.gz'
     bcl_out2 = FASTQ_DIRECTORY + '/Undetermined_S0_R2_001.fastq.gz'
-    bar_out1 = OUTPUT_PREFIX + 'split.1.fq.gz'
-    bar_out2 = OUTPUT_PREFIX + 'split.2.fq.gz'
-    trimmer_out1 = OUTPUT_PREFIX + '.split.1.trimmed.paired.fastq.gz'
-    trimmer_out2 = OUTPUT_PREFIX + '.split.2.trimmed.paired.fastq.gz'
-    trimmer_un_out1 = OUTPUT_PREFIX + '.split.1.trimmed.unpaired.fastq.gz'
-    trimmer_un_out2 = OUTPUT_PREFIX + '.split.2.trimmed.unpaired.fastq.gz'
+    bar_out1 = FASTQ_DIRECTORY + '/Undetermined_S0_R1_001.fastq.gz.out.fq.gz'
+    bar_out2 = FASTQ_DIRECTORY + '/Undetermined_S0_R2_001.fastq.gz.out.fq.gz'
+    trimmer_out1 = OUTPUT_PREFIX + '.1.trimmed.paired.fastq.gz'
+    trimmer_out2 = OUTPUT_PREFIX + '.2.trimmed.paired.fastq.gz'
+    trimmer_un_out1 = OUTPUT_PREFIX + '.1.trimmed.unpaired.fastq.gz'
+    trimmer_un_out2 = OUTPUT_PREFIX + '.2.trimmed.unpaired.fastq.gz'
 
     # Configure logger
     logging.basicConfig(filename= OUTPUT_PREFIX + '.log',format='%(asctime)s '
@@ -124,6 +124,7 @@ if __name__ == '__main__':
 
         # Submit barcode corrector only if no existing results or if user wants
         # to overwrite
+	print(bar_out1)
         if not os.path.exists(bar_out1) or \
             args.force_overwrite_all or \
             args.force_overwrite_barcodecorrect:
