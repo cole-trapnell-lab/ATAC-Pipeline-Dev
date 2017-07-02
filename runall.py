@@ -19,7 +19,7 @@ PIPELINE_PATH = os.path.dirname(os.path.realpath(__file__))
 
 BARCODE_CORRECTER = os.path.join(PIPELINE_PATH, 'src/barcode_correct_scatac.py')
 BARCODE_CORRECTER_MISEQ = os.path.join(PIPELINE_PATH,
-    'src/barcode_correct_scatac_miseq.py')
+    'src/darrens_miseq.py')
 TRIMMOMATIC = os.path.join(PIPELINE_PATH,
     'Trimmomatic-0.36/trimmomatic-0.36.jar')
 
@@ -79,6 +79,8 @@ if __name__ == '__main__':
     OUTPUT_PREFIX = os.path.join(args.outdir, args.prefix)
     FASTQ_DIRECTORY = os.path.join(args.outdir, 'fastqs')
 
+    bcl_out1 = FASTQ_DIRECTORY + '/Undetermined_S0_R1_001.fastq.gz'
+    bcl_out2 = FASTQ_DIRECTORY + '/Undetermined_S0_R2_001.fastq.gz'
     bar_out1 = OUTPUT_PREFIX + 'split.1.fq.gz'
     bar_out2 = OUTPUT_PREFIX + 'split.2.fq.gz'
     trimmer_out1 = OUTPUT_PREFIX + '.split.1.trimmed.paired.fastq.gz'
@@ -131,9 +133,9 @@ if __name__ == '__main__':
             print "Cleaning and fixing barcodes..."
             logging.info('Barcode corrector started.')
             if args.miseq:
-                subprocess.check_call('python %s -F %s -o %s -E %s -n %s' %
-                    (BARCODE_CORRECTER_MISEQ, FASTQ_DIRECTORY, OUTPUT_PREFIX,
-                    args.maxedit, args.nthreads), shell=True)
+                subprocess.check_call('python %s -1 %s -2 %s -O1 %s -O2 %s -L %s --gzip' %
+                    (BARCODE_CORRECTER_MISEQ, bcl_out1, bcl_out2, bar_out1, bar_out2, OUTPUT_PREFIX + 'barcode_log.log'),
+                    shell=True)
             else:
                 subprocess.check_call('python %s -F %s -o %s -E %s -n %s' %
                     (BARCODE_CORRECTER, FASTQ_DIRECTORY, OUTPUT_PREFIX,
