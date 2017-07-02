@@ -124,7 +124,6 @@ if __name__ == '__main__':
 
         # Submit barcode corrector only if no existing results or if user wants
         # to overwrite
-	print(bar_out1)
         if not os.path.exists(bar_out1) or \
             args.force_overwrite_all or \
             args.force_overwrite_barcodecorrect:
@@ -182,14 +181,14 @@ if __name__ == '__main__':
 
     # Submit bowtie mapping only if no existing results or if user wants
     # to overwrite
-    if not os.path.exists(OUTPUT_PREFIX + ".split.bam") or \
+    if not os.path.exists(OUTPUT_PREFIX + ".bam") or \
         args.force_overwrite_all or \
         args.force_overwrite_mapping:
 
         logging.info('Bowtie2 started.')
         print "Starting mapping..."
 	subprocess.check_call('bowtie2 -3 1 --un-conc-gz %s.unaligned.fq.gz -X 2000 -p %s '
-            '-x %s -1 %s -2 %s | samtools view -Sb - > %s.split.bam' %
+            '-x %s -1 %s -2 %s | samtools view -Sb - > %s.bam' %
             (OUTPUT_PREFIX, args.nthreads, args.genome, trimmer_out1,
             trimmer_out2, OUTPUT_PREFIX), shell=True)
         logging.info('Bowtie2 ended.')
