@@ -216,7 +216,7 @@ function main()
     end
     close(o)
     close(g)
-    write(log, string(fail, "\t", corrected, "\t", perfect, "\t", total))
+    write(log, string(fail, "\t", corrected, "\t", perfect, "\t", total, "\n"))
     close(log)
 end
 
