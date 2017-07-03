@@ -8,7 +8,7 @@ import sys
 import logging
 
 PIPELINE_PATH = os.path.dirname(os.path.realpath(__file__))
-DEDUPLICATER = os.path.join(PIPELINE_PATH, 'sc_atac_true_dedup.py')
+DEDUPLICATER = os.path.join(PIPELINE_PATH, 'src/sc_atac_true_dedup.py')
 PICARD = os.path.join(PIPELINE_PATH, 'picard-tools-1.141/picard.jar')
 
 if __name__ == '__main__':
@@ -76,28 +76,16 @@ if __name__ == '__main__':
 
     if not os.path.exists(OUTPUT_PREFIX + ".all.bed") or \
             args.force_overwrite_all:
-        subprocess.call('bedtools bamtobed -i %s.true.nodups.bam > %s.all.bed'
+        subprocess.call('''bedtools bamtobed -i %s.true.nodups.bam | bedtools '''
+	    '''sort -i - | awk 'gsub(/(:| )+/,"\t")' > %s.all.bed'''
             % (OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
-
-    if not os.path.exists(OUTPUT_PREFIX + ".sort.bed") or \
-        args.force_overwrite_all:
-        subprocess.call('bedtools sort -i %s.all.bed > %s.sort.bed' %
-            (OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
-
-    if not os.path.exists(OUTPUT_PREFIX + ".bc.bed") or \
-        args.force_overwrite_all:
-
-        # Split cell name to only have barcode
-        subprocess.call('''awk 'gsub(/(:| )+/,"\t")' %s.sort.bed > %s.bc.bed'''
-            % (OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
-
         if args.barcodes != "None":
             # Keep only barcodes that are allowed
-            subprocess.call("grep -Fwf %s %s.bc.bed > %s.bc_only.bed" %
+            subprocess.call("grep -Fwf %s %s.all.bed > %s.all_bc.bed" %
                 (args.barcodes, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
-            after_bc = "%s.bc_only.bed" % OUTPUT_PREFIX
+            after_bc = "%s.all_bc.bed" % OUTPUT_PREFIX
         else:
-            after_bc = "%s.bc.bed" % OUTPUT_PREFIX
+            after_bc = "%s.all.bed" % OUTPUT_PREFIX
 
         # Count cell reads
         subprocess.call("awk '{h[$4]++}; END { for(k in h) print k, h[k] }' "
