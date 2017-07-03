@@ -1,4 +1,4 @@
-#!/net/gs/vol1/home/hpliner/miniconda2/bin/python
+#!/usr/bin/python
 import argparse
 import os
 import subprocess
