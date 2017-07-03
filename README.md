@@ -34,5 +34,11 @@ The first argument of runall.py is the full path to your flowcell data. The seco
 For more details on further arguments, run `python runall.py --help`
 
 ### Output
-1. A folder called `fastq` that holds the original fastq output from bcl2fastq along with some stats from illumina and from barcode correction.
+1. A folder called `fastq` that holds:
+  a. The original fastq output from bcl2fastq along with some stats from illumina.
+  b. A file called barcode_correct.log that holds the number of corrected, failed, and perfect barcodes from barcode correction.
 2. bcl2fastq_log.txt which holds the usual output from bcl2fastq - cluster density etc.
+3. Prefix.log, that has times when processes started and ended.
+4. Prefix.split.q10.sort.bam/bai - an indexed and sorted bam with all mapped reads with quality above 10.
+some other stuff
+
