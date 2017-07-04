@@ -174,9 +174,8 @@ if __name__ == '__main__':
             print "Cleaning up..."
 
             # Remove temporary files created during the pipeline.
-            clean_command = ('rm %s; rm %s; rm %s; rm %s; rm %s/tempR*' %
-                (bar_out1, bar_out2, trimmer_un_out1, trimmer_un_out2,
-                FASTQ_DIRECTORY))
+            clean_command = ('rm %s; rm %s; rm %s; rm %s' %
+                (bar_out1, bar_out2, trimmer_un_out1, trimmer_un_out2))
             subprocess.check_call(clean_command, shell=True)
 
     # Submit bowtie mapping only if no existing results or if user wants
