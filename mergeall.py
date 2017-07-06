@@ -88,12 +88,13 @@ if __name__ == '__main__':
         if args.barcodes == "None":
             args.barcodes = "."
         subprocess.check_call('''bedtools intersect -bed -a %s.true.nodups.bam  '''
-            '''-b %s -v | bedtools sort -i - | awk 'gsub(/(:| )+/,"\t")' | '''
-            '''grep -Fwf %s - > %s.clean.bed''' %
-            (OUTPUT_PREFIX, HG19_BLACKLIST, args.barcodes, OUTPUT_PREFIX),
+            '''-b %s -v | bedtools sort -i - | awk 'gsub(/(:| )+/,"\t")' > %s.clean.bed''' %
+            (OUTPUT_PREFIX, HG19_BLACKLIST, OUTPUT_PREFIX),
             shell=True)
+        if args.barcodes != "None":
+            subprocess.check_call('''grep -Fwf %s.clean.bed > %s.cleant.bed''' % (OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
+	    subprocess.check_call('mv %s.cleant.bed %s.clean.bed; rm %s.cleant.bed' % (OUTPUT_PREFIX, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
         logging.info('Read clean up ended.')
-
     else:
         print ('Read clean up already done, skipping.')
         logging.info('Read clean up skipped.')
