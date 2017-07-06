@@ -9,6 +9,7 @@ import logging
 
 PIPELINE_PATH = os.path.dirname(os.path.realpath(__file__))
 DEDUPLICATER = os.path.join(PIPELINE_PATH, 'src/sc_atac_true_dedup.py')
+HG19_BLACKLIST = os.path.join(PIPELINE_PATH, 'src/ENCFF001TDO.bed')
 PICARD = os.path.join(PIPELINE_PATH, 'picard-tools-1.141/picard.jar')
 
 if __name__ == '__main__':
@@ -40,33 +41,39 @@ if __name__ == '__main__':
     logging.basicConfig(filename= OUTPUT_PREFIX + '.log',format='%(asctime)s '
         '%(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
     logging.info('Pipeline started.')
-    
+
     # Make sorted bed file from all bams
     if not os.path.exists(OUTPUT_PREFIX + ".merge.bam") or \
         args.force_overwrite_all:
-        logging.info('Merge started.')
-        subprocess.call('samtools merge %s.merge.bam %s' % (OUTPUT_PREFIX,
-            ' '.join(args.bamlist)), shell=True)
-        subprocess.call('samtools index %s.merge.bam' % OUTPUT_PREFIX,
-            shell=True)
-        logging.info('Merge ended.')
-        if not args.no_complexity:
-            subprocess.call('java -jar %s EstimateLibraryComplexity '
-            'I=%s.merge.bam O=%s.complexity_metrics.txt QUIET=true' % (PICARD,
-            OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
-
+        if len(args.bamlist) == 1:
+            print ('Only 1 bam, skipping merge.')
+            mergename = args.bamlist[1]
+        else:
+            logging.info('Merge started.')
+            subprocess.check_call('samtools merge %s.merge.bam %s' % (OUTPUT_PREFIX,
+                ' '.join(args.bamlist)), shell=True)
+            subprocess.check_call('samtools index %s.merge.bam' % OUTPUT_PREFIX,
+                shell=True)
+            logging.info('Merge ended.')
+            mergename = OUTPUT_PREFIX + '.merge.bam'
     else:
+        mergename = OUTPUT_PREFIX + '.merge.bam'
         print ('Bams already merged, skipping.')
         logging.info('Merge skipped.')
 
+    if not args.no_complexity:
+        subprocess.check_call('java -jar %s EstimateLibraryComplexity '
+        'I=%s O=%s.complexity_metrics.txt QUIET=true' % (PICARD,
+        mergename, OUTPUT_PREFIX), shell=True)
+
     if not os.path.exists(OUTPUT_PREFIX + ".true.nodups.bam"):
         logging.info('Deduplication started.')
-        subprocess.check_call('%s %s.merge.bam %s.true.nodups.bam' %
-            (DEDUPLICATER, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
-        subprocess.call('samtools view %s.true.nodups.bam | sort -u -k1,1 | '
+        subprocess.check_call('%s %s %s.true.nodups.bam' %
+            (DEDUPLICATER, mergename, OUTPUT_PREFIX), shell=True)
+        subprocess.check_call('samtools view %s.true.nodups.bam | sort -u -k1,1 | '
             'cut -f9 > %s.insertsize.txt' % (OUTPUT_PREFIX, OUTPUT_PREFIX),
             shell=True)
-        subprocess.call('samtools index %s.true.nodups.bam' % OUTPUT_PREFIX,
+        subprocess.check_call('samtools index %s.true.nodups.bam' % OUTPUT_PREFIX,
             shell=True)
         logging.info('Deduplication ended.')
 
@@ -74,25 +81,24 @@ if __name__ == '__main__':
         print ('Sequences already deduplicated, skipping.')
         logging.info('Deduplication skipped.')
 
-    if not os.path.exists(OUTPUT_PREFIX + ".all.bed") or \
-            args.force_overwrite_all:
-        subprocess.call('''bedtools bamtobed -i %s.true.nodups.bam | bedtools '''
-	    '''sort -i - | awk 'gsub(/(:| )+/,"\t")' > %s.all.bed'''
-            % (OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
-        if args.barcodes != "None":
-            # Keep only barcodes that are allowed
-            subprocess.call("grep -Fwf %s %s.all.bed > %s.all_bc.bed" %
-                (args.barcodes, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
-            after_bc = "%s.all_bc.bed" % OUTPUT_PREFIX
-        else:
-            after_bc = "%s.all.bed" % OUTPUT_PREFIX
-
-        # Count cell reads
-        subprocess.call("awk '{h[$4]++}; END { for(k in h) print k, h[k] }' "
-            "%s > %s.cell_read_counts.txt" % (after_bc, OUTPUT_PREFIX),
+# Remove blacklisted regions
+    if not os.path.exists(OUTPUT_PREFIX + ".clean.bed") or \
+        args.force_overwrite_all:
+        logging.info('Read clean up started.')
+        if args.barcodes == "None":
+            args.barcodes = "."
+        subprocess.check_call('''bedtools intersect -bed -a %s.true.nodups.bam  '''
+            '''-b %s -v | bedtools sort -i - | awk 'gsub(/(:| )+/,"\t")' | '''
+            '''grep -Fwf %s - > %s.clean.bed''' %
+            (OUTPUT_PREFIX, HG19_BLACKLIST, args.barcodes, OUTPUT_PREFIX),
             shell=True)
+        logging.info('Read clean up ended.')
+
     else:
-        if args.barcodes != "None":
-            after_bc = "%s.bc_only.bed" % OUTPUT_PREFIX
-        else:
-            after_bc = "%s.bc.bed" % OUTPUT_PREFIX
+        print ('Read clean up already done, skipping.')
+        logging.info('Read clean up skipped.')
+
+    # Count cell reads
+    subprocess.call("awk '{h[$4]++}; END { for(k in h) print k, h[k] }' "
+        "%s.clean.bed > %s.cell_read_counts.txt" % (OUTPUT_PREFIX, OUTPUT_PREFIX),
+        shell=True)
