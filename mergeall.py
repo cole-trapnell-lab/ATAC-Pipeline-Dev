@@ -85,8 +85,6 @@ if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PREFIX + ".clean.bed") or \
         args.force_overwrite_all:
         logging.info('Read clean up started.')
-        if args.barcodes == "None":
-            args.barcodes = "."
         subprocess.check_call('''bedtools intersect -bed -a %s.true.nodups.bam  '''
             '''-b %s -v | bedtools sort -i - | awk 'gsub(/(:| )+/,"\t")' > %s.clean.bed''' %
             (OUTPUT_PREFIX, HG19_BLACKLIST, OUTPUT_PREFIX),
