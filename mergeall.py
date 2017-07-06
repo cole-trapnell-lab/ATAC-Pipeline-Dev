@@ -47,7 +47,7 @@ if __name__ == '__main__':
         args.force_overwrite_all:
         if len(args.bamlist) == 1:
             print ('Only 1 bam, skipping merge.')
-            mergename = args.bamlist[1]
+            mergename = args.bamlist[0]
         else:
             logging.info('Merge started.')
             subprocess.check_call('samtools merge %s.merge.bam %s' % (OUTPUT_PREFIX,
@@ -68,7 +68,7 @@ if __name__ == '__main__':
 
     if not os.path.exists(OUTPUT_PREFIX + ".true.nodups.bam"):
         logging.info('Deduplication started.')
-        subprocess.check_call('%s %s %s.true.nodups.bam' %
+        subprocess.check_call('python %s %s %s.true.nodups.bam' %
             (DEDUPLICATER, mergename, OUTPUT_PREFIX), shell=True)
         subprocess.check_call('samtools view %s.true.nodups.bam | sort -u -k1,1 | '
             'cut -f9 > %s.insertsize.txt' % (OUTPUT_PREFIX, OUTPUT_PREFIX),

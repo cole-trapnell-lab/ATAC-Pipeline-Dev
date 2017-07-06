@@ -202,7 +202,7 @@ if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PREFIX + ".split.q10.sort.bam"):
         print "Filtering low quality reads..."
         logging.info('Quality filter started.')
-        subprocess.check_call("samtools view -h -f3 -F12 -q10 %s.split.bam | grep "
+        subprocess.check_call("samtools view -h -f3 -F12 -q10 %s.bam | grep "
             " -v '\tchrM\t' | samtools sort -T %s.sorttemp -@ %s - -o "
             "%s.split.q10.sort.bam" % (OUTPUT_PREFIX, OUTPUT_PREFIX,
             args.nthreads, OUTPUT_PREFIX), shell=True)
