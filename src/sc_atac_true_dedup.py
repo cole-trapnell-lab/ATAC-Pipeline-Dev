@@ -14,6 +14,7 @@ for refchrom in refs:
 	print "Deduplicating " + refchrom + "..."
 	for read in readsin.fetch(refchrom):
 		readname = read.qname.split(':')[0]
+		read.qname = readname
 		if read.tlen < 0:
 			fragstart = str(read.mpos - read.tlen)
 			fragend = str(read.mpos)
@@ -25,4 +26,3 @@ for refchrom in refs:
 		except KeyError:
 			readdic[readname + fragstart + fragend] = read
 			readsout.write(read)
-
