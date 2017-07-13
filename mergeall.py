@@ -91,7 +91,7 @@ if __name__ == '__main__':
             shell=True)
         if args.barcodes != "None":
             subprocess.check_call('''grep -Fwf %s %s.clean.bed > %s.cleant.bed''' % (args.barcodes, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
-	        subprocess.check_call('mv %s.cleant.bed %s.clean.bed; rm %s.cleant.bed' % (OUTPUT_PREFIX, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
+	    subprocess.check_call('mv %s.cleant.bed %s.clean.bed; rm %s.cleant.bed' % (OUTPUT_PREFIX, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
         logging.info('Read clean up ended.')
     else:
         print ('Read clean up already done, skipping.')
