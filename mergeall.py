@@ -86,7 +86,7 @@ if __name__ == '__main__':
         args.force_overwrite_all:
         logging.info('Read clean up started.')
         subprocess.check_call('''bedtools intersect -bed -a %s.true.nodups.bam  '''
-            '''-b %s -v > temp.bed; bedtools sort -i temp.bed > %s.clean.bed''' %
+            '''-b %s -v > %s.clean.bed''' %
             (OUTPUT_PREFIX, HG19_BLACKLIST, OUTPUT_PREFIX),
             shell=True)
         if args.barcodes != "None":
