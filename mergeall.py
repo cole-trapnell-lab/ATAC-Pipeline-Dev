@@ -101,3 +101,29 @@ if __name__ == '__main__':
     subprocess.call("awk '{h[$4]++}; END { for(k in h) print k, h[k] }' "
         "%s.clean.bed > %s.cell_read_counts.txt" % (OUTPUT_PREFIX, OUTPUT_PREFIX),
         shell=True)
+
+    # Remove low read count cells
+    if not os.path.exists(OUTPUT_PREFIX + ".clean.bed") or \
+        args.force_overwrite_all:
+        logging.info('Remove low count cells started.')
+        # Count cell reads
+        subprocess.check_call("awk '{h[$4]++}; END { for(k in h) print k, h[k] }' "
+            "%s.clean.bed > %s.cell_read_counts.txt" % (OUTPUT_PREFIX, OUTPUT_PREFIX),
+            shell=True)
+        if cell_count_cutoff == "mclust":
+            # Exclude cells with less than n reads where n is determined by mclust
+            cell_count_cutoff = subprocess.call("Rscript --vanilla %s %s" % (MCLUST, OUTPUT_PREFIX),
+                shell=True)
+        subprocess.check_call("awk '{if ($2 > %s) print $1}' %s.cell_read_counts.txt > high_read_cells.txt"
+            % (cell_count_cutoff, OUTPUT_PREFIX))
+        subprocess.check_call('''grep -Fwf high_read_cells.txt %s.clean.bed | '''
+            '''awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $4, $6, $7} > %s.for_macs.bed'''
+            % (OUTPUT_PREFIX, OUTPUT_PREFIX))
+# Call peaks with MACS2:
+#module load python/2.7.3
+#module load numpy/1.8.1
+#module load setuptools/25.1.1
+#module load MACS/2.1.0
+
+#macs2 callpeak -t hifT.for_macs_rmsk.bed --nomodel --keep-dup all --extsize 200 --shift -100 -f BED -g hs -n hifT_macs --call-summits
+
