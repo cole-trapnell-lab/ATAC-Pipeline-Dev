@@ -94,16 +94,11 @@ if __name__ == '__main__':
             (OUTPUT_PREFIX, HG19_BLACKLIST, OUTPUT_PREFIX),
             shell=True)
         subprocess.check_call('''grep -Fwf %s %s.clean.bed > %s.cleant.bed''' % (args.barcodes, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
-	    subprocess.check_call('mv %s.cleant.bed %s.clean.bed; rm %s.cleant.bed' % (OUTPUT_PREFIX, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
+	subprocess.check_call('mv %s.cleant.bed %s.clean.bed; rm %s.cleant.bed' % (OUTPUT_PREFIX, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
         logging.info('Read clean up ended.')
     else:
         print ('Read clean up already done, skipping.')
         logging.info('Read clean up skipped.')
-
-    # Count cell reads
-    subprocess.call("awk '{h[$4]++}; END { for(k in h) print k, h[k] }' "
-        "%s.clean.bed > %s.cell_read_counts.txt" % (OUTPUT_PREFIX, OUTPUT_PREFIX),
-        shell=True)
 
     # Remove low read count cells
     if not os.path.exists(OUTPUT_PREFIX + ".for_macs.bed") or \
@@ -117,6 +112,7 @@ if __name__ == '__main__':
             # Exclude cells with less than n reads where n is determined by mclust
             args.cell_count_cutoff = subprocess.call("Rscript --vanilla %s %s" % (MCLUST, OUTPUT_PREFIX),
                 shell=True)
+	print(args.cell_count_cutoff)
         subprocess.check_call("awk '{if ($2 > %s) print $1}' %s.cell_read_counts.txt > high_read_cells.txt"
             % (args.cell_count_cutoff, OUTPUT_PREFIX))
         subprocess.check_call('''grep -Fwf high_read_cells.txt %s.clean.bed | '''
