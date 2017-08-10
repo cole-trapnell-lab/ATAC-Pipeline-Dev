@@ -24,8 +24,7 @@ if __name__ == '__main__':
     parser.add_argument('-P','--prefix',help='Output file prefix, otherwise '
         'default(out)', default = "out", dest='prefix', required=False)
     parser.add_argument('-C','--barcodes', help='Barcodes combinations allowed'
-        ' in a text file, if none provided, no filtering on possible '
-        'barcodes.', required=False, dest='barcodes', default="None")
+        ' in a text file.', required=True, dest='barcodes', default="None")
     parser.add_argument('--no_complexity', action='store_true',
         help='Add flag if you would like to skip running picard tools '
         'EstimateLibraryComplexity')
@@ -94,8 +93,7 @@ if __name__ == '__main__':
             '''-b %s -v | sed 's/\/[0-9]//' > %s.clean.bed''' %
             (OUTPUT_PREFIX, HG19_BLACKLIST, OUTPUT_PREFIX),
             shell=True)
-        if args.barcodes != "None":
-            subprocess.check_call('''grep -Fwf %s %s.clean.bed > %s.cleant.bed''' % (args.barcodes, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
+        subprocess.check_call('''grep -Fwf %s %s.clean.bed > %s.cleant.bed''' % (args.barcodes, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
 	    subprocess.check_call('mv %s.cleant.bed %s.clean.bed; rm %s.cleant.bed' % (OUTPUT_PREFIX, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
         logging.info('Read clean up ended.')
     else:
@@ -126,3 +124,8 @@ if __name__ == '__main__':
 #module load MACS/2.1.0
 
 #macs2 callpeak -t hifT.for_macs_rmsk.bed --nomodel --keep-dup all --extsize 200 --shift -100 -f BED -g hs -n hifT_macs --call-summits
+
+
+
+# make valid barcodes step required
+# count invalid barcodes
