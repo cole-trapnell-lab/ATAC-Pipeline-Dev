@@ -29,7 +29,7 @@ if __name__ == '__main__':
         help='Add flag if you would like to skip running picard tools '
         'EstimateLibraryComplexity')
     parser.add_argument('--override_reads_per_cell', default = "mclust",
-        dest = 'cell_count_cutoff'
+        dest = 'cell_count_cutoff',
         help='Number of reads per cell to count as valid, calculated using '
         'mclust if left blank')
     parser.add_argument('--force_overwrite_all', action='store_true',
@@ -100,20 +100,25 @@ if __name__ == '__main__':
         print ('Read clean up already done, skipping.')
         logging.info('Read clean up skipped.')
 
+    # Count cell reads
+    subprocess.call("awk '{h[$4]++}; END { for(k in h) print k, h[k] }' "
+        "%s.clean.bed > %s.cell_read_counts.txt" % (OUTPUT_PREFIX, OUTPUT_PREFIX),
+        shell=True)
+
     # Remove low read count cells
-    if not os.path.exists(OUTPUT_PREFIX + ".clean.bed") or \
+    if not os.path.exists(OUTPUT_PREFIX + ".for_macs.bed") or \
         args.force_overwrite_all:
         logging.info('Remove low count cells started.')
         # Count cell reads
         subprocess.check_call("awk '{h[$4]++}; END { for(k in h) print k, h[k] }' "
             "%s.clean.bed > %s.cell_read_counts.txt" % (OUTPUT_PREFIX, OUTPUT_PREFIX),
             shell=True)
-        if cell_count_cutoff == "mclust":
+        if args.cell_count_cutoff == "mclust":
             # Exclude cells with less than n reads where n is determined by mclust
-            cell_count_cutoff = subprocess.call("Rscript --vanilla %s %s" % (MCLUST, OUTPUT_PREFIX),
+            args.cell_count_cutoff = subprocess.call("Rscript --vanilla %s %s" % (MCLUST, OUTPUT_PREFIX),
                 shell=True)
         subprocess.check_call("awk '{if ($2 > %s) print $1}' %s.cell_read_counts.txt > high_read_cells.txt"
-            % (cell_count_cutoff, OUTPUT_PREFIX))
+            % (args.cell_count_cutoff, OUTPUT_PREFIX))
         subprocess.check_call('''grep -Fwf high_read_cells.txt %s.clean.bed | '''
             '''awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $4, $6, $7} > %s.for_macs.bed'''
             % (OUTPUT_PREFIX, OUTPUT_PREFIX))
