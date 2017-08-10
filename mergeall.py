@@ -11,6 +11,7 @@ PIPELINE_PATH = os.path.dirname(os.path.realpath(__file__))
 DEDUPLICATER = os.path.join(PIPELINE_PATH, 'src/sc_atac_true_dedup.py')
 HG19_BLACKLIST = os.path.join(PIPELINE_PATH, 'src/ENCFF001TDO.bed')
 PICARD = os.path.join(PIPELINE_PATH, 'picard-tools-1.141/picard.jar')
+MCLUST = os.path.join(PIPELINE_PATH, 'src/mclust_call.R')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='A program to aggregate '
@@ -28,6 +29,10 @@ if __name__ == '__main__':
     parser.add_argument('--no_complexity', action='store_true',
         help='Add flag if you would like to skip running picard tools '
         'EstimateLibraryComplexity')
+    parser.add_argument('--override_reads_per_cell', default = "mclust",
+        dest = 'cell_count_cutoff',
+        help='Number of reads per cell to count as valid, calculated using '
+        'mclust if left blank')
     parser.add_argument('--force_overwrite_all', action='store_true',
         help='Force overwrite of all steps of pipeline regardless of files '
         'already present.')
@@ -103,19 +108,19 @@ if __name__ == '__main__':
         shell=True)
 
     # Remove low read count cells
-    if not os.path.exists(OUTPUT_PREFIX + ".clean.bed") or \
+    if not os.path.exists(OUTPUT_PREFIX + ".for_macs.bed") or \
         args.force_overwrite_all:
         logging.info('Remove low count cells started.')
         # Count cell reads
         subprocess.check_call("awk '{h[$4]++}; END { for(k in h) print k, h[k] }' "
             "%s.clean.bed > %s.cell_read_counts.txt" % (OUTPUT_PREFIX, OUTPUT_PREFIX),
             shell=True)
-        if cell_count_cutoff == "mclust":
+        if args.cell_count_cutoff == "mclust":
             # Exclude cells with less than n reads where n is determined by mclust
-            cell_count_cutoff = subprocess.call("Rscript --vanilla %s %s" % (MCLUST, OUTPUT_PREFIX),
+            args.cell_count_cutoff = subprocess.call("Rscript --vanilla %s %s" % (MCLUST, OUTPUT_PREFIX),
                 shell=True)
         subprocess.check_call("awk '{if ($2 > %s) print $1}' %s.cell_read_counts.txt > high_read_cells.txt"
-            % (cell_count_cutoff, OUTPUT_PREFIX))
+            % (args.cell_count_cutoff, OUTPUT_PREFIX))
         subprocess.check_call('''grep -Fwf high_read_cells.txt %s.clean.bed | '''
             '''awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $4, $6, $7} > %s.for_macs.bed'''
             % (OUTPUT_PREFIX, OUTPUT_PREFIX))
@@ -126,4 +131,3 @@ if __name__ == '__main__':
 #module load MACS/2.1.0
 
 #macs2 callpeak -t hifT.for_macs_rmsk.bed --nomodel --keep-dup all --extsize 200 --shift -100 -f BED -g hs -n hifT_macs --call-summits
-
