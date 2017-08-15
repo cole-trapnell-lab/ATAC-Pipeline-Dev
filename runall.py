@@ -186,7 +186,7 @@ if __name__ == '__main__':
 
         logging.info('Bowtie2 started.')
         print "Starting mapping..."
-	subprocess.check_call('bowtie2 -3 1 --un-conc-gz %s.unaligned.fq.gz -X 2000 -p %s '
+	subprocess.check_call('module load bowtie2/latest; bowtie2 -3 1 --un-conc-gz %s.unaligned.fq.gz -X 2000 -p %s '
             '-x %s -1 %s -2 %s | samtools view -Sb - > %s.bam' %
             (OUTPUT_PREFIX, args.nthreads, args.genome, trimmer_out1,
             trimmer_out2, OUTPUT_PREFIX), shell=True)
