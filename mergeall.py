@@ -40,6 +40,10 @@ if __name__ == '__main__':
     if not os.path.exists(args.outdir):
         os.mkdir(args.outdir)
     OUTPUT_PREFIX = os.path.join(args.outdir, args.prefix)
+    qcdir = os.path.join(args.outdir, 'qc_info')
+
+    if not os.path.exists(qcdir):
+        os.mkdir(qcdir)
 
     # Configure logger
     logging.basicConfig(filename= OUTPUT_PREFIX + '.log',format='%(asctime)s '
@@ -94,7 +98,7 @@ if __name__ == '__main__':
             (OUTPUT_PREFIX, HG19_BLACKLIST, OUTPUT_PREFIX),
             shell=True)
         subprocess.check_call('''grep -Fwf %s %s.clean.bed > %s.cleant.bed''' % (args.barcodes, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
-	    subprocess.check_call('mv %s.cleant.bed %s.clean.bed; rm %s.cleant.bed' % (OUTPUT_PREFIX, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
+	    subprocess.check_call('mv %s.cleant.bed %s.clean.bed' % (OUTPUT_PREFIX, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
         logging.info('Read clean up ended.')
     else:
         print ('Read clean up already done, skipping.')
@@ -122,15 +126,12 @@ if __name__ == '__main__':
         subprocess.check_call('''grep -Fwf high_read_cells.txt %s.clean.bed | '''
             '''awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $4, $6, $7} > %s.for_macs.bed'''
             % (OUTPUT_PREFIX, OUTPUT_PREFIX))
-# Call peaks with MACS2:
-#module load python/2.7.3
-#module load numpy/1.8.1
-#module load setuptools/25.1.1
-#module load MACS/2.1.0
 
-#macs2 callpeak -t hifT.for_macs_rmsk.bed --nomodel --keep-dup all --extsize 200 --shift -100 -f BED -g hs -n hifT_macs --call-summits
-
-
-
-# make valid barcodes step required
+    if not os.path.exists(OUTPUT_PREFIX + ".clean.bed") or \
+        args.force_overwrite_all:
+        subprocess.check_call('''module load python/2.7.3; module load '''
+            '''numpy/1.8.1; module load setuptools/25.1.1; module load '''
+            '''MACS/2.1.0; macs2 callpeak -t %s.for_macs.bed --nomodel '''
+            '''--keep-dup all --extsize 200 --shift -100 -f BED -g hs -n '''
+            ''''%s_macs --call-summits''' % (OUTPUT_PREFIX, OUTPUT_PREFIX))
 # count invalid barcodes
