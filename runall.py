@@ -108,8 +108,8 @@ if __name__ == '__main__':
             logging.info('bcl2fastq started.')
 	    bcl2fastq_command = ('module load modules modules-init modules-gs '
                 'bcl2fastq/2.16 fastqc/0.10.1; bcl2fastq --runfolder-dir %s '
-                '-o %s --no-lane-splitting --sample-sheet %s/Sample_sheet.csv ' % (args.rundir,
-                FASTQ_DIRECTORY, FASTQ_DIRECTORY))
+                '-o %s --no-lane-splitting --interop-dir %s --sample-sheet %s/Sample_sheet.csv ' % (args.rundir,
+                FASTQ_DIRECTORY, FASTQ_DIRECTORY, FASTQ_DIRECTORY))
             f = open(os.path.join(args.outdir, "bcl2fastq_log.txt"), 'w')
             subprocess.check_call(bcl2fastq_command, shell=True, stdout = f,
                 stderr=f)
