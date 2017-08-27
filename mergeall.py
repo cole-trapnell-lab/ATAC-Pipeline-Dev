@@ -69,7 +69,7 @@ if __name__ == '__main__':
         print ('Bams already merged, skipping.')
         logging.info('Merge skipped.')
 
-    if not args.no_complexity:
+    if not args.no_complexity and not os.path.exists(OUTPUT_PREFIX + ".complexity_metrics.txt"):
         subprocess.check_call('java -jar %s EstimateLibraryComplexity '
         'I=%s O=%s.complexity_metrics.txt QUIET=true' % (PICARD,
         mergename, OUTPUT_PREFIX), shell=True)
@@ -98,7 +98,7 @@ if __name__ == '__main__':
             (OUTPUT_PREFIX, HG19_BLACKLIST, OUTPUT_PREFIX),
             shell=True)
         subprocess.check_call('''grep -Fwf %s %s.clean.bed > %s.cleant.bed''' % (args.barcodes, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
-	subprocess.check_call('mv %s.cleant.bed %s.clean.bed' % (OUTPUT_PREFIX, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
+	subprocess.check_call('mv %s.cleant.bed %s.clean.bed' % (OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
         logging.info('Read clean up ended.')
     else:
         print ('Read clean up already done, skipping.')
