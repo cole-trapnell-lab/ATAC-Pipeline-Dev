@@ -104,30 +104,30 @@ if __name__ == '__main__':
         print ('Read clean up already done, skipping.')
         logging.info('Read clean up skipped.')
 
-    # Remove low read count cells
-    if not os.path.exists(OUTPUT_PREFIX + ".for_macs.bed") or \
-        args.force_overwrite_all:
-        logging.info('Remove low count cells started.')
-        # Count cell reads
-        subprocess.check_call("awk '{h[$4]++}; END { for(k in h) print k, h[k] }' "
-            "%s.clean.bed > %s.cell_read_counts.txt" % (OUTPUT_PREFIX, OUTPUT_PREFIX),
-            shell=True)
-        if args.cell_count_cutoff == "mclust":
-            # Exclude cells with less than n reads where n is determined by mclust
-            args.cell_count_cutoff = subprocess.call("Rscript --vanilla %s %s" % (MCLUST, OUTPUT_PREFIX),
-                shell=True)
-	print(args.cell_count_cutoff)
-        subprocess.check_call("awk '{if ($2 > %s) print $1}' %s.cell_read_counts.txt > high_read_cells.txt"
-            % (args.cell_count_cutoff, OUTPUT_PREFIX))
-        subprocess.check_call('''grep -Fwf high_read_cells.txt %s.clean.bed | '''
-            '''awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $4, $6, $7} > %s.for_macs.bed'''
-            % (OUTPUT_PREFIX, OUTPUT_PREFIX))
+#    # Remove low read count cells
+#    if not os.path.exists(OUTPUT_PREFIX + ".for_macs.bed") or \
+#        args.force_overwrite_all:
+#        logging.info('Remove low count cells started.')
+#        # Count cell reads
+#        subprocess.check_call("awk '{h[$4]++}; END { for(k in h) print k, h[k] }' "
+#            "%s.clean.bed > %s.cell_read_counts.txt" % (OUTPUT_PREFIX, OUTPUT_PREFIX),
+#            shell=True)
+#        if args.cell_count_cutoff == "mclust":
+#            # Exclude cells with less than n reads where n is determined by #mclust
+#            args.cell_count_cutoff = subprocess.call("Rscript --vanilla %s %s" % (MCLUST, OUTPUT_PREFIX),
+#                shell=True)
+	#print(args.cell_count_cutoff)
+    #    subprocess.check_call("awk '{if ($2 > %s) print $1}' %s.cell_read_counts.txt > high_read_cells.txt"
+    #        % (args.cell_count_cutoff, OUTPUT_PREFIX))
+#        subprocess.check_call('''grep -Fwf high_read_cells.txt %s.clean.bed | '''
+#            '''awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $4, $6, $7} > %s.for_macs.bed'''
+#            % (OUTPUT_PREFIX, OUTPUT_PREFIX))
 
-    if not os.path.exists(OUTPUT_PREFIX + ".clean.bed") or \
-        args.force_overwrite_all:
-        subprocess.check_call('''module load python/2.7.3; module load '''
-            '''numpy/1.8.1; module load setuptools/25.1.1; module load '''
-            '''MACS/2.1.0; macs2 callpeak -t %s.for_macs.bed --nomodel '''
-            '''--keep-dup all --extsize 200 --shift -100 -f BED -g hs -n '''
-            ''''%s_macs --call-summits''' % (OUTPUT_PREFIX, OUTPUT_PREFIX))
+#    if not os.path.exists(OUTPUT_PREFIX + ".clean.bed") or \
+#        args.force_overwrite_all:
+#        subprocess.check_call('''module load python/2.7.3; module load '''
+#            '''numpy/1.8.1; module load setuptools/25.1.1; module load '''
+#            '''MACS/2.1.0; macs2 callpeak -t %s.for_macs.bed --nomodel '''
+#            '''--keep-dup all --extsize 200 --shift -100 -f BED -g hs -n '''
+#            ''''%s_macs --call-summits''' % (OUTPUT_PREFIX, OUTPUT_PREFIX))
 # count invalid barcodes
