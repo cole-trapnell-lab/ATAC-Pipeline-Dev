@@ -1,7 +1,7 @@
 # sci-ATAC-seq Read Processing Pipeline
 The purpose of this pipeline is to get reads from bcl (directly off the illumina machines) to a peak by cell matrix. Currently, this pipeline takes care of the first step: running bcl2fastq, cleaning up and correcting barcodes and mapping.  I am still very actively debugging, so report issues if you have them.
 
-### Installation:
+## Installation:
 ~~~~
 module load julia/latest
 julia
@@ -12,6 +12,7 @@ Pkg.add("ArgParse")
 
 Currently, this must be run on the lab cluster because it recruits cluster modules.
 
+## Part 1 - Flowcell to QC-ed Sorted BAM
 ### Basic usage:
 
 Make a script called `runcall.sh` with the following contents:
@@ -41,4 +42,26 @@ For more details on further arguments, run `python runall.py --help`
 3. Prefix.log, that has times when processes started and ended.
 4. Prefix.split.q10.sort.bam/bai - an indexed and sorted bam with all mapped reads with quality above 10.
 some other stuff
+
+## Part 2 - QC-ed Sorted BAM(s) to Deduplicated Sorted bed
+### Basic usage:
+
+Make a script called `mergecall.sh` with the following contents:
+~~~~ 
+#$ -pe serial 10
+#$ -l mfree=10G
+
+module load julia/latest
+module load coreutils/8.24
+path/to/mergeall.py -B [list of split.q10.sort.bams] -O [Path to output folder] -P [Prefix you want on output files] -C [path to file with each of the valid barcodes allowed in the experiment]
+~~~~ 
+
+To execute, run `qsub mergecall.sh`
+
+The first argument of mergeall.py is a list of the full paths to the BAMs created as output of Part 1. The second argument is the full path to where you want the output to go. The third argument is optional, and gives each output file an experiment prefix. The last argument is the path to a text file with all the allowed barcodes for your experiment, one barcode per line.
+
+For more details on further arguments, run `python mergeall.py --help`
+
+### Output
+a bunch of stuff
 
