@@ -21,16 +21,6 @@ BARCODE_CORRECTER = os.path.join(PIPELINE_PATH, 'src/barcode_correct_scatac.jl')
 TRIMMOMATIC = os.path.join(PIPELINE_PATH,
     'Trimmomatic-0.36/trimmomatic-0.36.jar')
 
-
-def initialize_directories(pipeline_root_directory):
-    """Initialize necessary sub-directories in output folder"""
-    fastqs = os.path.join(args.outdir, 'fastqs')
-
-    for directory in [fastqs]:
-        if not os.path.exists(directory):
-            os.mkdir(directory)
-
-
 # main function
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='A program to convert'
@@ -76,6 +66,11 @@ if __name__ == '__main__':
     initialize_directories(args.outdir)
     OUTPUT_PREFIX = os.path.join(args.outdir, args.prefix)
     FASTQ_DIRECTORY = os.path.join(args.outdir, 'fastqs')
+    QC_DIRECTORY = os.path.join(args.outdir, 'qc_info')
+
+    for directory in [FASTQ_DIRECTORY, QC_DIRECTORY]:
+        if not os.path.exists(directory):
+            os.mkdir(directory)
 
     bcl_out1 = FASTQ_DIRECTORY + '/Undetermined_S0_R1_001.fastq.gz'
     bcl_out2 = FASTQ_DIRECTORY + '/Undetermined_S0_R2_001.fastq.gz'
@@ -85,7 +80,10 @@ if __name__ == '__main__':
     trimmer_out2 = OUTPUT_PREFIX + '.2.trimmed.paired.fastq.gz'
     trimmer_un_out1 = OUTPUT_PREFIX + '.1.trimmed.unpaired.fastq.gz'
     trimmer_un_out2 = OUTPUT_PREFIX + '.2.trimmed.unpaired.fastq.gz'
-
+    qc_info = QC_DIRECTORY + "/QC_stats.txt"
+    qcf = open(qc_info, 'w')
+    qcf.write(str(args.rundir, "\n\n"))
+    qcf.close()
     # Configure logger
     logging.basicConfig(filename= OUTPUT_PREFIX + '.log',format='%(asctime)s '
         '%(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
@@ -180,6 +178,8 @@ if __name__ == '__main__':
 
     # Submit bowtie mapping only if no existing results or if user wants
     # to overwrite
+
+    qcf = open(qc_info, 'w')
     if not os.path.exists(OUTPUT_PREFIX + ".bam") or \
         args.force_overwrite_all or \
         args.force_overwrite_mapping:
@@ -191,6 +191,8 @@ if __name__ == '__main__':
             (OUTPUT_PREFIX, args.nthreads, args.genome, trimmer_out1,
             trimmer_out2, OUTPUT_PREFIX), shell=True)
         logging.info('Bowtie2 ended.')
+        mapped_reads = subprocess.call("samtools view -c -f3 -F12 %s.bam" % (OUTPUT_PREFIX), shell=True)
+        qcf.write(str('\ntotal mapped pairs:\t', mapped_reads))
         print "Mapping complete..."
 
     else:
@@ -208,9 +210,12 @@ if __name__ == '__main__':
             args.nthreads, OUTPUT_PREFIX), shell=True)
         subprocess.check_call('samtools index %s.split.q10.sort.bam' % OUTPUT_PREFIX,
             shell=True)
+        mapped_reads = subprocess.call("samtools view -c -f3 -F12 %s.split.q10.sort.bam" % (OUTPUT_PREFIX), shell=True)
+        qcf.write(str('\ntotal Q10 pairs:\t', mapped_reads))
         logging.info('Quality filter finished.')
     else:
         print 'Sequences already filtered, skipping.'
         logging.info('Quality filter skipped.')
 
+    qcf.close()
     print "Complete."

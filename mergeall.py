@@ -40,10 +40,10 @@ if __name__ == '__main__':
     if not os.path.exists(args.outdir):
         os.mkdir(args.outdir)
     OUTPUT_PREFIX = os.path.join(args.outdir, args.prefix)
-    qcdir = os.path.join(args.outdir, 'qc_info')
+    QCDIR = os.path.join(args.outdir, 'qc_info')
 
-    if not os.path.exists(qcdir):
-        os.mkdir(qcdir)
+    if not os.path.exists(QCDIR):
+        os.mkdir(QCDIR)
 
     # Configure logger
     logging.basicConfig(filename= OUTPUT_PREFIX + '.log',format='%(asctime)s '
