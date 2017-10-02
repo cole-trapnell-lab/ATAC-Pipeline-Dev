@@ -63,7 +63,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Initialize directories and file prefixes required for the pipeline
-    initialize_directories(args.outdir)
     OUTPUT_PREFIX = os.path.join(args.outdir, args.prefix)
     FASTQ_DIRECTORY = os.path.join(args.outdir, 'fastqs')
     QC_DIRECTORY = os.path.join(args.outdir, 'qc_info')
@@ -81,8 +80,8 @@ if __name__ == '__main__':
     trimmer_un_out1 = OUTPUT_PREFIX + '.1.trimmed.unpaired.fastq.gz'
     trimmer_un_out2 = OUTPUT_PREFIX + '.2.trimmed.unpaired.fastq.gz'
     qc_info = QC_DIRECTORY + "/QC_stats.txt"
-    qcf = open(qc_info, 'w')
-    qcf.write(str(args.rundir, "\n\n"))
+    qcf = open(qc_info, 'a')
+    qcf.write(str(args.rundir + '\n\n'))
     qcf.close()
     # Configure logger
     logging.basicConfig(filename= OUTPUT_PREFIX + '.log',format='%(asctime)s '
@@ -98,7 +97,7 @@ if __name__ == '__main__':
 
 	# Submit bcl2fastq only if no existing results or if user wants to
         # overwrite
-        if len(os.listdir(FASTQ_DIRECTORY)) == 0 or \
+        if not os.path.exists(bcl_out1) or \
             args.force_overwrite_all or \
             args.force_overwrite_bcl2fastq:
 
@@ -179,7 +178,7 @@ if __name__ == '__main__':
     # Submit bowtie mapping only if no existing results or if user wants
     # to overwrite
 
-    qcf = open(qc_info, 'w')
+    qcf = open(qc_info, 'a')
     if not os.path.exists(OUTPUT_PREFIX + ".bam") or \
         args.force_overwrite_all or \
         args.force_overwrite_mapping:
@@ -192,7 +191,7 @@ if __name__ == '__main__':
             trimmer_out2, OUTPUT_PREFIX), shell=True)
         logging.info('Bowtie2 ended.')
         mapped_reads = subprocess.call("samtools view -c -f3 -F12 %s.bam" % (OUTPUT_PREFIX), shell=True)
-        qcf.write(str('\ntotal mapped pairs:\t', mapped_reads))
+        qcf.write(str('\ntotal mapped pairs:\t' + mapped_reads))
         print "Mapping complete..."
 
     else:
@@ -211,7 +210,7 @@ if __name__ == '__main__':
         subprocess.check_call('samtools index %s.split.q10.sort.bam' % OUTPUT_PREFIX,
             shell=True)
         mapped_reads = subprocess.call("samtools view -c -f3 -F12 %s.split.q10.sort.bam" % (OUTPUT_PREFIX), shell=True)
-        qcf.write(str('\ntotal Q10 pairs:\t', mapped_reads))
+        qcf.write(str('\ntotal Q10 pairs:\t' + str(mapped_reads)))
         logging.info('Quality filter finished.')
     else:
         print 'Sequences already filtered, skipping.'

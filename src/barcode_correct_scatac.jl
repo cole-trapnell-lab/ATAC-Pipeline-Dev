@@ -142,7 +142,7 @@ function main()
     o = GZip.gzopen(string(fileR1, ".out.fq.gz"), "w")
     g = GZip.gzopen(string(fileR2, ".out.fq.gz"), "w")
     filestr = string(parsed_args["fastq"], "/QC_stats.txt", )
-    filestr = replace(filestr, "fastq", "qc_info")
+    filestr = replace(filestr, "fastqs", "qc_info")
     GZip.gzopen(fileR1, "r") do f
         GZip.gzopen(fileR2, "r") do r
             while !eof(f)
@@ -218,7 +218,7 @@ function main()
     close(g)
     log = open(filestr, "w")
     write(log, "barcode correction stats\n")
-    write(log, string("total pairs:\t", total, "\nperfect:\t", perfect, "\ncorrected:\t", corrected, ""\ncorrected:\t"", failed, "\n"))
+    write(log, string("total pairs:\t", total, "\nperfect:\t", perfect, "\ncorrected:\t", corrected, "\ncorrected:\t", failed, "\n"))
     close(log)
 end
 
