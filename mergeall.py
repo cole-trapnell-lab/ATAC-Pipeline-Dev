@@ -131,3 +131,5 @@ if __name__ == '__main__':
             '''--keep-dup all --extsize 200 --shift -100 -f BED -g hs -n '''
             ''''%s_macs --call-summits''' % (OUTPUT_PREFIX, OUTPUT_PREFIX))
 # count invalid barcodes
+
+    logging.info('Mergeall Complete.')

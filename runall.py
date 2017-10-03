@@ -216,5 +216,6 @@ if __name__ == '__main__':
         print 'Sequences already filtered, skipping.'
         logging.info('Quality filter skipped.')
 
+    logging.info('Runall complete.')
     qcf.close()
     print "Complete."
