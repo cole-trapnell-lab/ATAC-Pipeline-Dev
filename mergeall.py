@@ -40,10 +40,15 @@ if __name__ == '__main__':
     if not os.path.exists(args.outdir):
         os.mkdir(args.outdir)
     OUTPUT_PREFIX = os.path.join(args.outdir, args.prefix)
-    QCDIR = os.path.join(args.outdir, 'qc_info')
+    QC_DIRECTORY = os.path.join(args.outdir, 'qc_info')
 
-    if not os.path.exists(QCDIR):
-        os.mkdir(QCDIR)
+    if not os.path.exists(QC_DIRECTORY):
+        os.mkdir(QC_DIRECTORY)
+
+    qc_info = QC_DIRECTORY + "/QC_stats.txt"
+    qcf = open(qc_info, 'a')
+    qcf.write("Mergeall QC info for " + str(args.bamlist))
+    qcf.close()
 
     # Configure logger
     logging.basicConfig(filename= OUTPUT_PREFIX + '.log',format='%(asctime)s '
@@ -53,6 +58,7 @@ if __name__ == '__main__':
     # Make sorted bed file from all bams
     if not os.path.exists(OUTPUT_PREFIX + ".merge.bam") or \
         args.force_overwrite_all:
+	qcf = open(qc_info, 'a')
         if len(args.bamlist) == 1:
             print ('Only 1 bam, skipping merge.')
             mergename = args.bamlist[0]
@@ -64,26 +70,36 @@ if __name__ == '__main__':
                 shell=True)
             logging.info('Merge ended.')
             mergename = OUTPUT_PREFIX + '.merge.bam'
+        qcf.write("\n\nTotal reads after merge: ")
+        qcf.flush()
+        subprocess.call("samtools view -c -f3 -F12 %s" % (mergename), shell=True, stdout=qcf, stderr=qcf)
+        qcf.close()	
     else:
         mergename = OUTPUT_PREFIX + '.merge.bam'
         print ('Bams already merged, skipping.')
         logging.info('Merge skipped.')
 
-    if not args.no_complexity and not os.path.exists(OUTPUT_PREFIX + ".complexity_metrics.txt"):
+
+    if not args.no_complexity and not os.path.exists(QC_DIRECTORY + "/" + args.prefix +  ".complexity_metrics.txt"):
         subprocess.check_call('java -jar %s EstimateLibraryComplexity '
-        'I=%s O=%s.complexity_metrics.txt QUIET=true' % (PICARD,
-        mergename, OUTPUT_PREFIX), shell=True)
+        'I=%s O=%s/%s.complexity_metrics.txt QUIET=true' % (PICARD,
+        mergename, QC_DIRECTORY, args.prefix), shell=True)
 
     if not os.path.exists(OUTPUT_PREFIX + ".true.nodups.bam"):
         logging.info('Deduplication started.')
         subprocess.check_call('python %s %s %s.true.nodups.bam' %
             (DEDUPLICATER, mergename, OUTPUT_PREFIX), shell=True)
         subprocess.check_call('samtools view %s.true.nodups.bam | sort -u -k1,1 | '
-            'cut -f9 > %s.insertsize.txt' % (OUTPUT_PREFIX, OUTPUT_PREFIX),
+            'cut -f9 > %s/%s.insertsize.txt' % (OUTPUT_PREFIX, QC_DIRECTORY, args.prefix),
             shell=True)
         subprocess.check_call('samtools index %s.true.nodups.bam' % OUTPUT_PREFIX,
             shell=True)
         logging.info('Deduplication ended.')
+        qcf = open(qc_info, 'a')
+	qcf.write("\nTotal reads after deduplication: ")
+        qcf.flush()
+        subprocess.call("samtools view -c -f3 -F12 %s.true.nodups.bam" % (OUTPUT_PREFIX), shell=True, stdout=qcf, stderr=qcf)
+        qcf.close()
 
     else:
         print ('Sequences already deduplicated, skipping.')
@@ -97,9 +113,19 @@ if __name__ == '__main__':
             '''-b %s -v | sed 's/\/[0-9]//' > %s.clean.bed''' %
             (OUTPUT_PREFIX, HG19_BLACKLIST, OUTPUT_PREFIX),
             shell=True)
+        qcf = open(qc_info, 'a')
+        qcf.write("\nTotal reads after removing blacklist: ")
+        qcf.flush()
+        subprocess.call("wc -l %s.clean.bed" % (OUTPUT_PREFIX), shell=True, stdout=qcf, stderr=qcf)
+
+# Remove non existant barcodes
+        qcf.write("\nTotal reads after removing bad barcodes: ")
+        qcf.flush()
         subprocess.check_call('''grep -Fwf %s %s.clean.bed > %s.cleant.bed''' % (args.barcodes, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
 	subprocess.check_call('mv %s.cleant.bed %s.clean.bed' % (OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
         logging.info('Read clean up ended.')
+        subprocess.call("wc -l %s.clean.bed" % (OUTPUT_PREFIX), shell=True, stdout=qcf, stderr=qcf)
+        qcf.close()
     else:
         print ('Read clean up already done, skipping.')
         logging.info('Read clean up skipped.')
@@ -114,16 +140,26 @@ if __name__ == '__main__':
             shell=True)
         if args.cell_count_cutoff == "mclust":
             # Exclude cells with less than n reads where n is determined by #mclust
-            args.cell_count_cutoff = subprocess.call("Rscript --vanilla %s %s" % (MCLUST, OUTPUT_PREFIX),
-                shell=True)
+            cutoff = subprocess.Popen("Rscript --vanilla %s %s" % (MCLUST, OUTPUT_PREFIX),
+                shell=True, stdout=subprocess.PIPE)
+            args.cell_count_cutoff = cutoff.stdout.readline().split(" ")[1].strip()
+        qcf = open(qc_info, 'a')
+        qcf.write("\nRead per cell cutoff: " + str(args.cell_count_cutoff))
+        qcf.write("\n\nTotal reads after removing low read cells: ")
+        qcf.flush()
+        subprocess.check_call("awk '{if ($2 > %s) print $1}' %s.cell_read_counts.txt > %s.high_read_cells.txt"
+            % (args.cell_count_cutoff, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
+        subprocess.check_call('''grep -Fwf %s.high_read_cells.txt %s.clean.bed | '''
+            '''awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $4, $6, $7}' > %s.for_macs.bed'''
+            % (OUTPUT_PREFIX, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
+        subprocess.call("wc -l %s.for_macs.bed" % (OUTPUT_PREFIX), shell=True, stdout=qcf, stderr=qcf)
+        qcf.write("\nTotal cells with more than " + args.cell_count_cutoff + " reads: ")
+	qcf.flush()
+	subprocess.call("wc -l %s.high_read_cells.txt" % OUTPUT_PREFIX, shell=True, stdout=qcf, stderr=qcf)
+        qcf.write("\n\n")
+        qcf.close()
 
-        subprocess.check_call("awk '{if ($2 > %s) print $1}' %s.cell_read_counts.txt > high_read_cells.txt"
-            % (args.cell_count_cutoff, OUTPUT_PREFIX))
-        subprocess.check_call('''grep -Fwf high_read_cells.txt %s.clean.bed | '''
-            '''awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $4, $6, $7} > %s.for_macs.bed'''
-            % (OUTPUT_PREFIX, OUTPUT_PREFIX))
-
-    if not os.path.exists(OUTPUT_PREFIX + ".clean.bed") or \
+    if not os.path.exists(OUTPUT_PREFIX + ".cleantemp.bed") or \
         args.force_overwrite_all:
         subprocess.check_call('''module load python/2.7.3; module load '''
             '''numpy/1.8.1; module load setuptools/25.1.1; module load '''

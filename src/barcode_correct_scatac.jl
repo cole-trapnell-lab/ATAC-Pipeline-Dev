@@ -216,9 +216,9 @@ function main()
     end
     close(o)
     close(g)
-    log = open(filestr, "w")
-    write(log, "barcode correction stats\n")
-    write(log, string("total pairs:\t", total, "\nperfect:\t", perfect, "\ncorrected:\t", corrected, "\ncorrected:\t", failed, "\n"))
+    log = open(filestr, "a")
+    write(log, "\n\nBarcode Correction:\n")
+    write(log, string("Total pairs:\t", total, "\nPerfect:\t", perfect, "\nCorrected:\t", corrected, "\nFailed:\t", fail, "\n"))
     close(log)
 end
 

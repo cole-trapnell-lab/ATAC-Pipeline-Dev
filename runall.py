@@ -81,7 +81,7 @@ if __name__ == '__main__':
     trimmer_un_out2 = OUTPUT_PREFIX + '.2.trimmed.unpaired.fastq.gz'
     qc_info = QC_DIRECTORY + "/QC_stats.txt"
     qcf = open(qc_info, 'a')
-    qcf.write(str(args.rundir + '\n\n'))
+    qcf.write("Runall QC info for " + str(args.rundir))
     qcf.close()
     # Configure logger
     logging.basicConfig(filename= OUTPUT_PREFIX + '.log',format='%(asctime)s '
@@ -149,7 +149,9 @@ if __name__ == '__main__':
         if not os.path.exists(trimmer_out1) or \
             args.force_overwrite_all or \
             args.force_overwrite_trimming:
-
+	    qcf = open(qc_info, 'a')
+            qcf.write("\n\nTrimmomatic:\n\n")
+            qcf.flush()
             print "Trimming adapters..."
             logging.info('Trimmomatic started.')
             trimmer_command = ('java -Xmx1G -jar %s PE -threads %s %s %s %s '
@@ -158,9 +160,9 @@ if __name__ == '__main__':
                 'MINLEN:20' % (TRIMMOMATIC, args.nthreads, bar_out1, bar_out2,
                 trimmer_out1, trimmer_un_out1, trimmer_out2, trimmer_un_out2,
                 PIPELINE_PATH))
-            subprocess.check_call(trimmer_command, shell=True)
+            subprocess.check_call(trimmer_command, shell=True, stdout=qcf, stderr=qcf)
             logging.info('Trimmomatic ended.')
-
+            qcf.close()
         else:
 
             print ('Sequences already trimmed, skipping trimming. Specify '
@@ -178,20 +180,20 @@ if __name__ == '__main__':
     # Submit bowtie mapping only if no existing results or if user wants
     # to overwrite
 
-    qcf = open(qc_info, 'a')
     if not os.path.exists(OUTPUT_PREFIX + ".bam") or \
         args.force_overwrite_all or \
         args.force_overwrite_mapping:
-
+        qcf = open(qc_info, 'a')
+        qcf.write("\n\nBowtie:\n\n")
+        qcf.flush()
         logging.info('Bowtie2 started.')
         print "Starting mapping..."
 	subprocess.check_call('module load bowtie2/latest; bowtie2 -3 1 --un-conc-gz %s.unaligned.fq.gz -X 2000 -p %s '
             '-x %s -1 %s -2 %s | samtools view -Sb - > %s.bam' %
             (OUTPUT_PREFIX, args.nthreads, args.genome, trimmer_out1,
-            trimmer_out2, OUTPUT_PREFIX), shell=True)
+            trimmer_out2, OUTPUT_PREFIX), shell=True, stderr=qcf, stdout=qcf)
         logging.info('Bowtie2 ended.')
-        mapped_reads = subprocess.call("samtools view -c -f3 -F12 %s.bam" % (OUTPUT_PREFIX), shell=True)
-        qcf.write(str('\ntotal mapped pairs:\t' + mapped_reads))
+        qcf.close()
         print "Mapping complete..."
 
     else:
@@ -203,18 +205,24 @@ if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PREFIX + ".split.q10.sort.bam"):
         print "Filtering low quality reads..."
         logging.info('Quality filter started.')
+        qcf = open(qc_info, 'a')
+        qcf.write("\n\nQualiy control:\n\nTotal mitochondrial reads: ")
+        qcf.flush()
+        subprocess.call("grep -c '\tchrM\t' %s.bam" % (OUTPUT_PREFIX), shell=True, stdout=qcf, stderr=qcf)
         subprocess.check_call("samtools view -h -f3 -F12 -q10 %s.bam | grep "
             " -v '\tchrM\t' | samtools sort -T %s.sorttemp -@ %s - -o "
             "%s.split.q10.sort.bam" % (OUTPUT_PREFIX, OUTPUT_PREFIX,
             args.nthreads, OUTPUT_PREFIX), shell=True)
         subprocess.check_call('samtools index %s.split.q10.sort.bam' % OUTPUT_PREFIX,
             shell=True)
-        mapped_reads = subprocess.call("samtools view -c -f3 -F12 %s.split.q10.sort.bam" % (OUTPUT_PREFIX), shell=True)
-        qcf.write(str('\ntotal Q10 pairs:\t' + str(mapped_reads)))
+        qcf.write("\nTotal reads after QC10: ")
+        qcf.flush()
+        subprocess.call("samtools view -c -f3 -F12 %s.split.q10.sort.bam" % (OUTPUT_PREFIX), shell=True, stdout=qcf, stderr=qcf)
+        qcf.write("\n\n")
+        qcf.close()
         logging.info('Quality filter finished.')
     else:
         print 'Sequences already filtered, skipping.'
         logging.info('Quality filter skipped.')
 
-    qcf.close()
     print "Complete."
