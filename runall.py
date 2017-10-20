@@ -180,4 +180,5 @@ if __name__ == '__main__':
     else:
         logging.info('Quality filter skipped.')
 
-    logging.info('Pipeline complete.')
+    logging.info('Runall complete.')
+    qcf.close()
