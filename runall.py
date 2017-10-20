@@ -13,6 +13,7 @@ import gzip
 import os.path
 import sys
 import logging
+import datetime
 
 # Construct paths to pipeline scripts as constants
 PIPELINE_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -69,7 +70,7 @@ if __name__ == '__main__':
     trimmer_un_out2 = OUTPUT_PREFIX + '.2.trimmed.unpaired.fastq.gz'
     qc_info = QC_DIRECTORY + "/QC_stats.txt"
     qcf = open(qc_info, 'a')
-    qcf.write("Runall QC info for " + str(args.rundir))
+    qcf.write("Runall QC info for " + str(args.rundir) + "\n%s" % datetime.datetime.now())
     qcf.close()
     # Configure logger
     logging.basicConfig(filename= OUTPUT_PREFIX + '.log',format='%(asctime)s '
@@ -93,55 +94,43 @@ if __name__ == '__main__':
     else:
         logging.info('bcl2fastq skipped.')
 
-    if not os.path.exists(trimmer_out1) or \
+    # Submit barcode corrector only if no existing results or if user wants
+    # to overwrite
+    if not os.path.exists(bar_out1) or \
         args.force_overwrite_all:
-        # Submit barcode corrector only if no existing results or if user wants
-        # to overwrite
-        if not os.path.exists(bar_out1) or \
-            args.force_overwrite_all:
-            args.force_overwrite_all = True
-            logging.info('Barcode corrector started.')
-            if args.miseq:
-                subprocess.check_call('julia %s -f %s -o %s -e %s --miseq' %
-                    (BARCODE_CORRECTER, FASTQ_DIRECTORY, OUTPUT_PREFIX,
-                    args.maxedit), shell=True)
-            else:
-                subprocess.check_call('julia %s -f %s -o %s -e %s' %
-                    (BARCODE_CORRECTER, FASTQ_DIRECTORY, OUTPUT_PREFIX,
-                    args.maxedit), shell=True)
-            logging.info('Barcode corrector ended.')
+        args.force_overwrite_all = True
+        logging.info('Barcode corrector started.')
+        if args.miseq:
+            subprocess.check_call('julia %s -f %s -o %s -e %s --miseq' %
+                (BARCODE_CORRECTER, FASTQ_DIRECTORY, OUTPUT_PREFIX,
+                args.maxedit), shell=True)
         else:
-            logging.info('Barcode corrector skipped.')
-
-        # Submit trimmer only if no existing results or if user wants
-        # to overwrite
-        if not os.path.exists(trimmer_out1) or \
-            args.force_overwrite_all:
-            args.force_overwrite_all = True
-            qcf = open(qc_info, 'a')
-            qcf.write("\n\nTrimmomatic:\n\n")
-            qcf.flush()
-            logging.info('Trimmomatic started.')
-            trimmer_command = ('java -Xmx1G -jar %s PE -threads %s %s %s %s '
-                '%s %s %s ILLUMINACLIP:%s'
-                '/Trimmomatic-0.36/adapters/NexteraPE-PE.fa:2:30:10:1:true '
-                'MINLEN:20' % (TRIMMOMATIC, args.nthreads, bar_out1, bar_out2,
-                trimmer_out1, trimmer_un_out1, trimmer_out2, trimmer_un_out2,
-                PIPELINE_PATH))
-            subprocess.check_call(trimmer_command, shell=True, stdout=qcf, stderr=qcf)
-            logging.info('Trimmomatic ended.')
-            qcf.close()
-        else:
-            logging.info('Trimmomatic skipped.')
-
-        if not args.keep_intermediates:
-            # Remove temporary files created during the pipeline.
-            clean_command = ('rm %s; rm %s; rm %s; rm %s' %
-                (bar_out1, bar_out2, trimmer_un_out1, trimmer_un_out2))
-            subprocess.check_call(clean_command, shell=True)
-
+            subprocess.check_call('julia %s -f %s -o %s -e %s' %
+                (BARCODE_CORRECTER, FASTQ_DIRECTORY, OUTPUT_PREFIX,
+                args.maxedit), shell=True)
+        logging.info('Barcode corrector ended.')
     else:
         logging.info('Barcode corrector skipped.')
+
+    # Submit trimmer only if no existing results or if user wants
+    # to overwrite
+    if not os.path.exists(trimmer_out1) or \
+        args.force_overwrite_all:
+        args.force_overwrite_all = True
+        qcf = open(qc_info, 'a')
+        qcf.write("\n\nTrimmomatic:\n\n")
+        qcf.flush()
+        logging.info('Trimmomatic started.')
+        trimmer_command = ('java -Xmx1G -jar %s PE -threads %s %s %s %s '
+            '%s %s %s ILLUMINACLIP:%s'
+            '/Trimmomatic-0.36/adapters/NexteraPE-PE.fa:2:30:10:1:true '
+            'MINLEN:20' % (TRIMMOMATIC, args.nthreads, bar_out1, bar_out2,
+            trimmer_out1, trimmer_un_out1, trimmer_out2, trimmer_un_out2,
+            PIPELINE_PATH))
+        subprocess.check_call(trimmer_command, shell=True, stdout=qcf, stderr=qcf)
+        logging.info('Trimmomatic ended.')
+        qcf.close()
+    else:
         logging.info('Trimmomatic skipped.')
 
     # Submit bowtie mapping only if no existing results or if user wants
@@ -153,7 +142,7 @@ if __name__ == '__main__':
         qcf.write("\n\nBowtie:\n\n")
         qcf.flush()
         logging.info('Bowtie2 started.')
-	    subprocess.check_call('module load bowtie2/latest; bowtie2 -3 1 --un-conc-gz %s.unaligned.fq.gz -X 2000 -p %s '
+	subprocess.check_call('module load bowtie2/latest; bowtie2 -3 1 --un-conc-gz %s.unaligned.fq.gz -X 2000 -p %s '
             '-x %s -1 %s -2 %s | samtools view -Sb - > %s.bam' %
             (OUTPUT_PREFIX, args.nthreads, args.genome, trimmer_out1,
             trimmer_out2, OUTPUT_PREFIX), shell=True, stderr=qcf, stdout=qcf)
@@ -184,6 +173,12 @@ if __name__ == '__main__':
         logging.info('Quality filter finished.')
     else:
         logging.info('Quality filter skipped.')
+
+    if not args.keep_intermediates:
+    # Remove temporary files created during the pipeline.
+        clean_command = ('rm %s; rm %s; rm %s; rm %s; rm %s; rm %s; rm %s.bam;' %
+            (bar_out1, bar_out2, trimmer_un_out1, trimmer_un_out2, trimmer_out1, trimmer_out2, OUTPUT_PREFIX ))
+        subprocess.check_call(clean_command, shell=True)
 
     logging.info('Runall complete.')
     qcf.close()
