@@ -12,6 +12,7 @@ DEDUPLICATER = os.path.join(PIPELINE_PATH, 'src/sc_atac_true_dedup.py')
 HG19_BLACKLIST = os.path.join(PIPELINE_PATH, 'src/ENCFF001TDO.bed')
 PICARD = os.path.join(PIPELINE_PATH, 'picard-tools-1.141/picard.jar')
 MCLUST = os.path.join(PIPELINE_PATH, 'src/mclust_call.R')
+QCPLOTS = os.path.join(PIPELINE_PATH, 'src/qcplots.R')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='A program to aggregate '
@@ -41,9 +42,11 @@ if __name__ == '__main__':
         os.mkdir(args.outdir)
     OUTPUT_PREFIX = os.path.join(args.outdir, args.prefix)
     QC_DIRECTORY = os.path.join(args.outdir, 'qc_info')
+    MACS_DIRECTORY = os.path.join(args.outdir, 'macs_output')
 
-    if not os.path.exists(QC_DIRECTORY):
-        os.mkdir(QC_DIRECTORY)
+    for directory in [QC_DIRECTORY, MACS_DIRECTORY]:
+        if not os.path.exists(directory):
+            os.mkdir(directory)
 
     qc_info = QC_DIRECTORY + "/QC_stats.txt"
     qcf = open(qc_info, 'a')
@@ -58,6 +61,7 @@ if __name__ == '__main__':
     # Make sorted bed file from all bams
     if not os.path.exists(OUTPUT_PREFIX + ".merge.bam") or \
         args.force_overwrite_all:
+	args.force_overwrite_all = True
 	qcf = open(qc_info, 'a')
         if len(args.bamlist) == 1:
             print ('Only 1 bam, skipping merge.')
@@ -85,7 +89,9 @@ if __name__ == '__main__':
         'I=%s O=%s/%s.complexity_metrics.txt QUIET=true' % (PICARD,
         mergename, QC_DIRECTORY, args.prefix), shell=True)
 
-    if not os.path.exists(OUTPUT_PREFIX + ".true.nodups.bam"):
+    if not os.path.exists(OUTPUT_PREFIX + ".true.nodups.bam") or \
+	args.force_overwrite_all:
+	args.force_overwrite_all = True
         logging.info('Deduplication started.')
         subprocess.check_call('python %s %s %s.true.nodups.bam' %
             (DEDUPLICATER, mergename, OUTPUT_PREFIX), shell=True)
@@ -104,10 +110,14 @@ if __name__ == '__main__':
     else:
         print ('Sequences already deduplicated, skipping.')
         logging.info('Deduplication skipped.')
+    
+    subprocess.call("Rscript --vanilla %s %s %s" % (QCPLOTS, QC_DIRECTORY, args.prefix),
+         shell=True)
 
 # Remove blacklisted regions
     if not os.path.exists(OUTPUT_PREFIX + ".clean.bed") or \
         args.force_overwrite_all:
+        args.force_overwrite_all = True
         logging.info('Read clean up started.')
         subprocess.check_call('''bedtools intersect -bed -a %s.true.nodups.bam  '''
             '''-b %s -v | sed 's/\/[0-9]//' > %s.clean.bed''' %
@@ -133,6 +143,7 @@ if __name__ == '__main__':
     # Remove low read count cells
     if not os.path.exists(OUTPUT_PREFIX + ".for_macs.bed") or \
         args.force_overwrite_all:
+        args.force_overwrite_all = True
         logging.info('Remove low count cells started.')
         # Count cell reads
         subprocess.check_call("awk '{h[$4]++}; END { for(k in h) print k, h[k] }' "
@@ -150,7 +161,7 @@ if __name__ == '__main__':
         subprocess.check_call("awk '{if ($2 > %s) print $1}' %s.cell_read_counts.txt > %s.high_read_cells.txt"
             % (args.cell_count_cutoff, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
         subprocess.check_call('''grep -Fwf %s.high_read_cells.txt %s.clean.bed | '''
-            '''awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $4, $6, $7}' > %s.for_macs.bed'''
+            '''awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $4, $5, $6}' > %s.for_macs.bed'''
             % (OUTPUT_PREFIX, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
         subprocess.call("wc -l %s.for_macs.bed" % (OUTPUT_PREFIX), shell=True, stdout=qcf, stderr=qcf)
         qcf.write("\nTotal cells with more than " + args.cell_count_cutoff + " reads: ")
@@ -159,11 +170,39 @@ if __name__ == '__main__':
         qcf.write("\n\n")
         qcf.close()
 
-    if not os.path.exists(OUTPUT_PREFIX + ".cleantemp.bed") or \
+    # Call peaks using MACS2
+    if not os.path.exists(MACS_DIRECTORY + args.prefix + "_macs_peaks.narrowPeak") or \
         args.force_overwrite_all:
+        args.force_overwrite_all = True
         subprocess.check_call('''module load python/2.7.3; module load '''
             '''numpy/1.8.1; module load setuptools/25.1.1; module load '''
             '''MACS/2.1.0; macs2 callpeak -t %s.for_macs.bed --nomodel '''
             '''--keep-dup all --extsize 200 --shift -100 -f BED -g hs -n '''
-            ''''%s_macs --call-summits''' % (OUTPUT_PREFIX, OUTPUT_PREFIX))
-# count invalid barcodes
+            '''%s/%s_macs --call-summits''' % (OUTPUT_PREFIX, MACS_DIRECTORY, args.prefix), shell=True)
+
+
+    if not os.path.exists(OUTPUT_DIRECTORY + ".intersect.bed") or \
+        args.force_overwrite_all:
+        args.force_overwrite_all = True
+        subprocess.check_call("bedtools intersect -b %s.for_macs.bed -a %s/%s_macs_peaks.narrowPeak -wa -wb >  %s.intersect.bed" % (OUTPUT_PREFIX, MACS_DIRECTORY, args.prefix), shell=True)
+  awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $7, $8}' %s.intersect.bed | sed 's/.$//' | awk '!x[$0]++' | awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $4}' | awk 'BEGiN {OFS = "\t"}; {h[$0]++}; END { for(k in h) print k, h[k] }' > %s.counts.txt
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -45,18 +45,6 @@ if __name__ == '__main__':
     parser.add_argument('--force_overwrite_all', action='store_true',
         help='Force overwrite of all steps of pipeline regardless of files '
         'already present.')
-    parser.add_argument('--force_overwrite_bcl2fastq', action='store_true',
-        help='Force overwrite bcl2fastq regardless of files already present.')
-    parser.add_argument('--force_overwrite_cleanfastq', action='store_true',
-        help='Force overwrite fastq cleaning regardless of files already '
-        'present.')
-    parser.add_argument('--force_overwrite_barcodecorrect',
-        action='store_true', help='Force overwrite barcode correction '
-        'regardless of files already present.')
-    parser.add_argument('--force_overwrite_trimming', action='store_true',
-        help='Force overwrite trimming regardless of files already present.')
-    parser.add_argument('--force_overwrite_mapping', action='store_true',
-        help='Force overwrite mapping regardless of files already present.')
     parser.add_argument('--keep_intermediates',
         action='store_true', help='Skip clean up steps to keep intermediate '
         'files.')
@@ -88,127 +76,95 @@ if __name__ == '__main__':
         '%(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
     logging.info('Pipeline started.')
 
-    # Only continue with initial cleaning process if cleaned and trimmed files
-    # do not exist, or user specifies. This line exists because after the clean
-    # step, the intermediate files checked for below are removed.
+    # Submit bcl2fastq only if no existing results or if user wants to
+    # overwrite
+    if not os.path.exists(bcl_out1) or \
+        args.force_overwrite_all:
+        args.force_overwrite_all = True
+        logging.info('bcl2fastq started.')
+	bcl2fastq_command = ('module load modules modules-init modules-gs '
+            'bcl2fastq/2.16 fastqc/0.10.1; bcl2fastq --runfolder-dir %s '
+            '-o %s --no-lane-splitting --interop-dir %s --sample-sheet %s/Sample_sheet.csv ' % (args.rundir,
+            FASTQ_DIRECTORY, FASTQ_DIRECTORY, FASTQ_DIRECTORY))
+        f = open(os.path.join(args.outdir, "bcl2fastq_log.txt"), 'w')
+        subprocess.check_call(bcl2fastq_command, shell=True, stdout = f,
+            stderr=f)
+
+    else:
+        logging.info('bcl2fastq skipped.')
+
+    # Submit barcode corrector only if no existing results or if user wants
+    # to overwrite
+    if not os.path.exists(bar_out1) or \
+        args.force_overwrite_all:
+        args.force_overwrite_all = True
+        logging.info('Barcode corrector started.')
+        if args.miseq:
+            subprocess.check_call('julia %s -f %s -o %s -e %s --miseq' %
+                (BARCODE_CORRECTER, FASTQ_DIRECTORY, OUTPUT_PREFIX,
+                args.maxedit), shell=True)
+        else:
+            subprocess.check_call('julia %s -f %s -o %s -e %s' %
+                (BARCODE_CORRECTER, FASTQ_DIRECTORY, OUTPUT_PREFIX,
+                args.maxedit), shell=True)
+        logging.info('Barcode corrector ended.')
+    else:
+        logging.info('Barcode corrector skipped.')
+
+    # Submit trimmer only if no existing results or if user wants
+    # to overwrite
     if not os.path.exists(trimmer_out1) or \
-        args.force_overwrite_all or \
-        args.force_overwrite_trimming:
+        args.force_overwrite_all:
+        args.force_overwrite_all = True        
+        qcf = open(qc_info, 'a')
+        qcf.write("\n\nTrimmomatic:\n\n")
+        qcf.flush()
+        logging.info('Trimmomatic started.')
+        trimmer_command = ('java -Xmx1G -jar %s PE -threads %s %s %s %s '
+            '%s %s %s ILLUMINACLIP:%s'
+            '/Trimmomatic-0.36/adapters/NexteraPE-PE.fa:2:30:10:1:true '
+            'MINLEN:20' % (TRIMMOMATIC, args.nthreads, bar_out1, bar_out2,
+            trimmer_out1, trimmer_un_out1, trimmer_out2, trimmer_un_out2,
+            PIPELINE_PATH))
+        subprocess.check_call(trimmer_command, shell=True, stdout=qcf, stderr=qcf)
+        logging.info('Trimmomatic ended.')
+        qcf.close()
+    else:
+        logging.info('Trimmomatic skipped.')
 
-	# Submit bcl2fastq only if no existing results or if user wants to
-        # overwrite
-        if not os.path.exists(bcl_out1) or \
-            args.force_overwrite_all or \
-            args.force_overwrite_bcl2fastq:
-
-            print('Starting bcl2fastq...')
-            logging.info('bcl2fastq started.')
-	    bcl2fastq_command = ('module load modules modules-init modules-gs '
-                'bcl2fastq/2.16 fastqc/0.10.1; bcl2fastq --runfolder-dir %s '
-                '-o %s --no-lane-splitting --interop-dir %s --sample-sheet %s/Sample_sheet.csv ' % (args.rundir,
-                FASTQ_DIRECTORY, FASTQ_DIRECTORY, FASTQ_DIRECTORY))
-            f = open(os.path.join(args.outdir, "bcl2fastq_log.txt"), 'w')
-            subprocess.check_call(bcl2fastq_command, shell=True, stdout = f,
-                stderr=f)
-            logging.info('bcl2fastq ended.')
-
-        else:
-
-            print ('fastq directory is not empty, skipping bcl2fastq. Specify '
-                '--force_overwrite_all or --force_overwrite_bcl2fastq to '
-                'redo.')
-            logging.info('bcl2fastq skipped.')
-
-        # Submit barcode corrector only if no existing results or if user wants
-        # to overwrite
-        if not os.path.exists(bar_out1) or \
-            args.force_overwrite_all or \
-            args.force_overwrite_barcodecorrect:
-
-            print "Cleaning and fixing barcodes..."
-            logging.info('Barcode corrector started.')
-            if args.miseq:
-                subprocess.check_call('julia %s -f %s -o %s -e %s --miseq' %
-                    (BARCODE_CORRECTER, FASTQ_DIRECTORY, OUTPUT_PREFIX,
-                    args.maxedit), shell=True)
-            else:
-                subprocess.check_call('julia %s -f %s -o %s -e %s' %
-                    (BARCODE_CORRECTER, FASTQ_DIRECTORY, OUTPUT_PREFIX,
-                    args.maxedit), shell=True)
-            logging.info('Barcode corrector ended.')
-
-        else:
-
-            print ('Barcodes already fixed, skipping fix barcodes. Specify '
-                '--force_overwrite_all or --force_overwrite_barcodecorrect to '
-                'redo.')
-            logging.info('Barcode corrector skipped.')
-
-        # Submit trimmer only if no existing results or if user wants
-        # to overwrite
-        if not os.path.exists(trimmer_out1) or \
-            args.force_overwrite_all or \
-            args.force_overwrite_trimming:
-	    qcf = open(qc_info, 'a')
-            qcf.write("\n\nTrimmomatic:\n\n")
-            qcf.flush()
-            print "Trimming adapters..."
-            logging.info('Trimmomatic started.')
-            trimmer_command = ('java -Xmx1G -jar %s PE -threads %s %s %s %s '
-                '%s %s %s ILLUMINACLIP:%s'
-                '/Trimmomatic-0.36/adapters/NexteraPE-PE.fa:2:30:10:1:true '
-                'MINLEN:20' % (TRIMMOMATIC, args.nthreads, bar_out1, bar_out2,
-                trimmer_out1, trimmer_un_out1, trimmer_out2, trimmer_un_out2,
-                PIPELINE_PATH))
-            subprocess.check_call(trimmer_command, shell=True, stdout=qcf, stderr=qcf)
-            logging.info('Trimmomatic ended.')
-            qcf.close()
-        else:
-
-            print ('Sequences already trimmed, skipping trimming. Specify '
-                '--force_overwrite_all or --force_overwrite_trimming to redo.')
-            logging.info('Trimmomatic skipped.')
-
-        if not args.keep_intermediates:
-            print "Cleaning up..."
-
-            # Remove temporary files created during the pipeline.
-            clean_command = ('rm %s; rm %s; rm %s; rm %s' %
-                (bar_out1, bar_out2, trimmer_un_out1, trimmer_un_out2))
-            subprocess.check_call(clean_command, shell=True)
+    if not args.keep_intermediates:
+        # Remove temporary files created during the pipeline.
+        clean_command = ('rm %s; rm %s; rm %s; rm %s' %
+            (bar_out1, bar_out2, trimmer_un_out1, trimmer_un_out2))
+        subprocess.check_call(clean_command, shell=True)
 
     # Submit bowtie mapping only if no existing results or if user wants
     # to overwrite
 
     if not os.path.exists(OUTPUT_PREFIX + ".bam") or \
-        args.force_overwrite_all or \
-        args.force_overwrite_mapping:
+        args.force_overwrite_all:
+        args.force_overwrite_all = True
         qcf = open(qc_info, 'a')
         qcf.write("\n\nBowtie:\n\n")
         qcf.flush()
         logging.info('Bowtie2 started.')
-        print "Starting mapping..."
 	subprocess.check_call('module load bowtie2/latest; bowtie2 -3 1 --un-conc-gz %s.unaligned.fq.gz -X 2000 -p %s '
             '-x %s -1 %s -2 %s | samtools view -Sb - > %s.bam' %
             (OUTPUT_PREFIX, args.nthreads, args.genome, trimmer_out1,
             trimmer_out2, OUTPUT_PREFIX), shell=True, stderr=qcf, stdout=qcf)
         logging.info('Bowtie2 ended.')
         qcf.close()
-        print "Mapping complete..."
-
     else:
-
-        print ('Sequences already mapped, skipping mapping. Specify '
-            '--force_overwrite_all or --force_overwrite_mapping to redo.')
         logging.info('Bowtie2 skipped.')
 
-    if not os.path.exists(OUTPUT_PREFIX + ".split.q10.sort.bam"):
-        print "Filtering low quality reads..."
+    if not os.path.exists(OUTPUT_PREFIX + ".split.q10.sort.bam") or \
+        args.force_overwrite_all:
+        args.force_overwrite_all = True        
         logging.info('Quality filter started.')
         qcf = open(qc_info, 'a')
         qcf.write("\n\nQualiy control:\n\nTotal mitochondrial reads: ")
         qcf.flush()
-        subprocess.call("grep -c '\tchrM\t' %s.bam" % (OUTPUT_PREFIX), shell=True, stdout=qcf, stderr=qcf)
+        subprocess.call("samtools view %s.bam | grep -c '\tchrM\t' -" % (OUTPUT_PREFIX), shell=True, stdout=qcf, stderr=qcf)
         subprocess.check_call("samtools view -h -f3 -F12 -q10 %s.bam | grep "
             " -v '\tchrM\t' | samtools sort -T %s.sorttemp -@ %s - -o "
             "%s.split.q10.sort.bam" % (OUTPUT_PREFIX, OUTPUT_PREFIX,
@@ -222,7 +178,6 @@ if __name__ == '__main__':
         qcf.close()
         logging.info('Quality filter finished.')
     else:
-        print 'Sequences already filtered, skipping.'
         logging.info('Quality filter skipped.')
 
-    print "Complete."
+    logging.info('Pipeline complete.')
