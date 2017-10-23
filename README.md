@@ -15,7 +15,8 @@ Currently, this must be run on the lab cluster because it recruits cluster modul
 ## Part 1 - Flowcell to QC-ed Sorted BAM
 ### Basic usage:
 
-Make a script called `runcall.sh` with the following contents:
+Make a script called `runcall.sh` with the following contents: 
+NOTE: These defaults assume that you are mapping to hg19 and that you ran the run on a NextSeq. If not, use `--help` to see alternative flags.
 ~~~~ 
 #$ -pe serial 10
 #$ -l mfree=10G
