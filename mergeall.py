@@ -185,7 +185,7 @@ if __name__ == '__main__':
         args.force_overwrite_all:
         args.force_overwrite_all = True
         subprocess.check_call("bedtools intersect -b %s.for_macs.bed -a %s/%s_macs_peaks.narrowPeak -wa -wb >  %s.intersect.bed" % (OUTPUT_PREFIX, MACS_DIRECTORY, args.prefix), shell=True)
-  awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $7, $8}' %s.intersect.bed | sed 's/.$//' | awk '!x[$0]++' | awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $4}' | awk 'BEGiN {OFS = "\t"}; {h[$0]++}; END { for(k in h) print k, h[k] }' > %s.counts.txt
+        subprocess.check_call('''awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $7, $8}' %s.intersect.bed | sed 's/.$//' | awk '!x[$0]++' | awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $4}' | awk 'BEGiN {OFS = "\t"}; {h[$0]++}; END { for(k in h) print k, h[k] }' > %s.counts.txt''' % (OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
 
 
 
