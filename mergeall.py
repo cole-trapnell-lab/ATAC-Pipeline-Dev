@@ -26,6 +26,9 @@ if __name__ == '__main__':
         'default(out)', default = "out", dest='prefix', required=False)
     parser.add_argument('-C','--barcodes', help='Barcodes combinations allowed'
         ' in a text file.', required=True, dest='barcodes', default="None")
+    parser.add_argument('-R','--blacklist', help='Path to bed of blacklisted regions to be '
+        'removed. Default is HG19 encode blacklist: ENCFF001TDO.bed. For no '
+        'blacklist, put None.', required=False, dest='blacklist', default=HG19_BLACKLIST)
     parser.add_argument('--no_complexity', action='store_true',
         help='Add flag if you would like to skip running picard tools '
         'EstimateLibraryComplexity')
@@ -36,6 +39,9 @@ if __name__ == '__main__':
     parser.add_argument('--force_overwrite_all', action='store_true',
         help='Force overwrite of all steps of pipeline regardless of files '
         'already present.')
+    parser.add_argument('--keep_intermediates',
+        action='store_true', help='Skip clean up steps to keep intermediate '
+        'files.')    
     args = parser.parse_args()
 
     if not os.path.exists(args.outdir):
@@ -64,7 +70,7 @@ if __name__ == '__main__':
 	args.force_overwrite_all = True
 	qcf = open(qc_info, 'a')
         if len(args.bamlist) == 1:
-            print ('Only 1 bam, skipping merge.')
+            logging.info('Only 1 bam, skipping merge.')
             mergename = args.bamlist[0]
         else:
             logging.info('Merge started.')
@@ -80,7 +86,6 @@ if __name__ == '__main__':
         qcf.close()	
     else:
         mergename = OUTPUT_PREFIX + '.merge.bam'
-        print ('Bams already merged, skipping.')
         logging.info('Merge skipped.')
 
 
@@ -108,7 +113,6 @@ if __name__ == '__main__':
         qcf.close()
 
     else:
-        print ('Sequences already deduplicated, skipping.')
         logging.info('Deduplication skipped.')
     
     subprocess.call("Rscript --vanilla %s %s %s" % (QCPLOTS, QC_DIRECTORY, args.prefix),
@@ -119,25 +123,29 @@ if __name__ == '__main__':
         args.force_overwrite_all:
         args.force_overwrite_all = True
         logging.info('Read clean up started.')
-        subprocess.check_call('''bedtools intersect -bed -a %s.true.nodups.bam  '''
-            '''-b %s -v | sed 's/\/[0-9]//' > %s.clean.bed''' %
-            (OUTPUT_PREFIX, HG19_BLACKLIST, OUTPUT_PREFIX),
-            shell=True)
-        qcf = open(qc_info, 'a')
-        qcf.write("\nTotal reads after removing blacklist: ")
-        qcf.flush()
-        subprocess.call("wc -l %s.clean.bed" % (OUTPUT_PREFIX), shell=True, stdout=qcf, stderr=qcf)
+        if args.blacklist == None:
+            logging.info('No blacklist provided, skipping.')
+            clean_name = OUTPUT_PREFIX + ".true.nodups.bam"
+        else:
+            subprocess.check_call('''bedtools intersect -bed -a %s.true.nodups.bam  '''
+                '''-b %s -v | sed 's/\/[0-9]//' > %s.clean.bed''' %
+                (OUTPUT_PREFIX, args.blacklist, OUTPUT_PREFIX),
+                shell=True)
+            qcf = open(qc_info, 'a')
+            qcf.write("\nTotal reads after removing blacklist: ")
+            qcf.flush()
+            subprocess.call("wc -l %s.clean.bed" % (OUTPUT_PREFIX), shell=True, stdout=qcf, stderr=qcf)
+            clean_name = OUTPUT_PREFIX + ".clean.bed"
 
 # Remove non existant barcodes
         qcf.write("\nTotal reads after removing bad barcodes: ")
         qcf.flush()
-        subprocess.check_call('''grep -Fwf %s %s.clean.bed > %s.cleant.bed''' % (args.barcodes, OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
+        subprocess.check_call('''grep -Fwf %s %s > %s.cleant.bed''' % (args.barcodes, clean_name, OUTPUT_PREFIX), shell=True)
 	subprocess.check_call('mv %s.cleant.bed %s.clean.bed' % (OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
         logging.info('Read clean up ended.')
         subprocess.call("wc -l %s.clean.bed" % (OUTPUT_PREFIX), shell=True, stdout=qcf, stderr=qcf)
         qcf.close()
     else:
-        print ('Read clean up already done, skipping.')
         logging.info('Read clean up skipped.')
 
     # Remove low read count cells
@@ -171,24 +179,37 @@ if __name__ == '__main__':
         qcf.close()
 
     # Call peaks using MACS2
-    if not os.path.exists(MACS_DIRECTORY + args.prefix + "_macs_peaks.narrowPeak") or \
+    if not os.path.exists(MACS_DIRECTORY + "/" + args.prefix + "_macs_peaks.narrowPeak") or \
         args.force_overwrite_all:
         args.force_overwrite_all = True
+        logging.info('MACS peak calling started.')
         subprocess.check_call('''module load python/2.7.3; module load '''
             '''numpy/1.8.1; module load setuptools/25.1.1; module load '''
             '''MACS/2.1.0; macs2 callpeak -t %s.for_macs.bed --nomodel '''
             '''--keep-dup all --extsize 200 --shift -100 -f BED -g hs -n '''
             '''%s/%s_macs --call-summits''' % (OUTPUT_PREFIX, MACS_DIRECTORY, args.prefix), shell=True)
+        logging.info('MACS peak calling ended.')
+    else:
+        logging.info('MACS skipped.')
 
-
-    if not os.path.exists(OUTPUT_DIRECTORY + ".intersect.bed") or \
+    if not os.path.exists(OUTPUT_PREFIX + ".intersect.bed") or \
         args.force_overwrite_all:
+        logging.info('Intersect started.')
         args.force_overwrite_all = True
-        subprocess.check_call("bedtools intersect -b %s.for_macs.bed -a %s/%s_macs_peaks.narrowPeak -wa -wb >  %s.intersect.bed" % (OUTPUT_PREFIX, MACS_DIRECTORY, args.prefix), shell=True)
-        subprocess.check_call('''awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $7, $8}' %s.intersect.bed | sed 's/.$//' | awk '!x[$0]++' | awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $4}' | awk 'BEGiN {OFS = "\t"}; {h[$0]++}; END { for(k in h) print k, h[k] }' > %s.counts.txt''' % (OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
+        subprocess.check_call("bedtools intersect -b %s.for_macs.bed -a %s/%s_macs_peaks.narrowPeak -wa -wb >  %s.intersect.bed" % (OUTPUT_PREFIX, MACS_DIRECTORY, args.prefix, OUTPUT_PREFIX), shell=True)
+        logging.info('Intersect ended.')
+    
+    if not os.path.exists(OUTPUT_PREFIX + ".counts.txt") or \
+        args.force_overwrite_all:
+	args.force_overwrite_all = True
+        logging.info('Count matrix started.')
+        subprocess.check_call('''awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $14}' %s.intersect.bed | sed 's/.$//' | awk '!x[$0]++' | awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $4}' | awk 'BEGiN {OFS = "\t"}; {h[$0]++}; END { for(k in h) print k, h[k] }' | awk 'BEGIN {OFS="\t"}; {print $1 "_" $2 "_" $3, $4, $5}' > %s.counts.txt''' % (OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
+        logging.info('Count matrix ended.')
 
-
-
-
+    if not args.keep_intermediates:
+    # Remove temporary files created during the pipeline.
+        clean_command = ('rm %s.for_macs.bed; rm %s.intersect.bed; rm %s.clean.bed; rm %s.merge.bam*; rm %s.true.nodups.bam;' %
+        (OUTPUT_PREFIX, OUTPUT_PREFIX, OUTPUT_PREFIX, OUTPUT_PREFIX, OUTPUT_PREFIX))
+        subprocess.check_call(clean_command, shell=True)
 
     logging.info('Mergeall Complete.')

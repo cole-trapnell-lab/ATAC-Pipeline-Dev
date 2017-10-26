@@ -55,7 +55,7 @@ if __name__ == '__main__':
     OUTPUT_PREFIX = os.path.join(args.outdir, args.prefix)
     FASTQ_DIRECTORY = os.path.join(args.outdir, 'fastqs')
     QC_DIRECTORY = os.path.join(args.outdir, 'qc_info')
-
+    print(FASTQ_DIRECTORY)
     for directory in [FASTQ_DIRECTORY, QC_DIRECTORY]:
         if not os.path.exists(directory):
             os.mkdir(directory)
