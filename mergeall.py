@@ -41,7 +41,7 @@ if __name__ == '__main__':
         'already present.')
     parser.add_argument('--keep_intermediates',
         action='store_true', help='Skip clean up steps to keep intermediate '
-        'files.')    
+        'files.')
     args = parser.parse_args()
 
     if not os.path.exists(args.outdir):
@@ -65,14 +65,14 @@ if __name__ == '__main__':
     logging.info('Pipeline started.')
 
     # Make sorted bed file from all bams
-    if not os.path.exists(OUTPUT_PREFIX + ".merge.bam") or \
-        args.force_overwrite_all:
-	args.force_overwrite_all = True
-	qcf = open(qc_info, 'a')
-        if len(args.bamlist) == 1:
-            logging.info('Only 1 bam, skipping merge.')
-            mergename = args.bamlist[0]
-        else:
+    qcf = open(qc_info, 'a')
+    if len(args.bamlist) == 1:
+        logging.info('Only 1 bam, skipping merge.')
+        mergename = args.bamlist[0]
+    else:
+        if not os.path.exists(OUTPUT_PREFIX + ".merge.bam") or \
+            args.force_overwrite_all:
+	        args.force_overwrite_all = True
             logging.info('Merge started.')
             subprocess.check_call('samtools merge %s.merge.bam %s' % (OUTPUT_PREFIX,
                 ' '.join(args.bamlist)), shell=True)
@@ -80,14 +80,13 @@ if __name__ == '__main__':
                 shell=True)
             logging.info('Merge ended.')
             mergename = OUTPUT_PREFIX + '.merge.bam'
-        qcf.write("\n\nTotal reads after merge: ")
-        qcf.flush()
-        subprocess.call("samtools view -c -f3 -F12 %s" % (mergename), shell=True, stdout=qcf, stderr=qcf)
-        qcf.close()	
-    else:
-        mergename = OUTPUT_PREFIX + '.merge.bam'
-        logging.info('Merge skipped.')
-
+            qcf.write("\n\nTotal reads after merge: ")
+            qcf.flush()
+            subprocess.call("samtools view -c -f3 -F12 %s" % (mergename), shell=True, stdout=qcf, stderr=qcf)
+        else:
+            mergename = OUTPUT_PREFIX + '.merge.bam'
+            logging.info('Merge skipped.')
+    qcf.close()
 
     if not args.no_complexity and not os.path.exists(QC_DIRECTORY + "/" + args.prefix +  ".complexity_metrics.txt"):
         subprocess.check_call('java -jar %s EstimateLibraryComplexity '
@@ -107,14 +106,14 @@ if __name__ == '__main__':
             shell=True)
         logging.info('Deduplication ended.')
         qcf = open(qc_info, 'a')
-	qcf.write("\nTotal reads after deduplication: ")
+        qcf.write("\nTotal reads after deduplication: ")
         qcf.flush()
         subprocess.call("samtools view -c -f3 -F12 %s.true.nodups.bam" % (OUTPUT_PREFIX), shell=True, stdout=qcf, stderr=qcf)
         qcf.close()
 
     else:
         logging.info('Deduplication skipped.')
-    
+
     subprocess.call("Rscript --vanilla %s %s %s" % (QCPLOTS, QC_DIRECTORY, args.prefix),
          shell=True)
 
@@ -198,7 +197,7 @@ if __name__ == '__main__':
         args.force_overwrite_all = True
         subprocess.check_call("bedtools intersect -b %s.for_macs.bed -a %s/%s_macs_peaks.narrowPeak -wa -wb >  %s.intersect.bed" % (OUTPUT_PREFIX, MACS_DIRECTORY, args.prefix, OUTPUT_PREFIX), shell=True)
         logging.info('Intersect ended.')
-    
+
     if not os.path.exists(OUTPUT_PREFIX + ".counts.txt") or \
         args.force_overwrite_all:
 	args.force_overwrite_all = True
