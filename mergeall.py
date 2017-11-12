@@ -64,6 +64,17 @@ if __name__ == '__main__':
         '%(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
     logging.info('Pipeline started.')
 
+    # Check dependencies
+    def cmd_exists(cmd):
+        return any(
+            os.access(os.path.join(path, cmd), os.X_OK)
+            for path in os.environ["PATH"].split(os.pathsep)
+        )
+
+    if not cmd_exists("bedtools"):
+        logging.info('ERROR bedtools not available')
+        sys.exit()
+
     # Make sorted bed file from all bams
     qcf = open(qc_info, 'a')
     if len(args.bamlist) == 1:
