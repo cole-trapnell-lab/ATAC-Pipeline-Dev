@@ -83,7 +83,7 @@ if __name__ == '__main__':
     else:
         if not os.path.exists(OUTPUT_PREFIX + ".merge.bam") or \
             args.force_overwrite_all:
-	        args.force_overwrite_all = True
+	    args.force_overwrite_all = True
             logging.info('Merge started.')
             subprocess.check_call('samtools merge %s.merge.bam %s' % (OUTPUT_PREFIX,
                 ' '.join(args.bamlist)), shell=True)
