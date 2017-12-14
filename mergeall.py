@@ -195,14 +195,14 @@ if __name__ == '__main__':
         args.force_overwrite_all:
         logging.info('Intersect started.')
         args.force_overwrite_all = True
-        subprocess.check_call("bedtools intersect -b %s.for_macs.bed -a %s/%s_macs_peaks.narrowPeak -wa -wb >  %s.intersect.bed" % (OUTPUT_PREFIX, MACS_DIRECTORY, args.prefix, OUTPUT_PREFIX), shell=True)
+        subprocess.check_call("bedtools intersect -a %s.for_macs.bed -b %s/%s_macs_peaks.narrowPeak -wa -wb >  %s.intersect.bed" % (OUTPUT_PREFIX, MACS_DIRECTORY, args.prefix, OUTPUT_PREFIX), shell=True)
         logging.info('Intersect ended.')
 
     if not os.path.exists(OUTPUT_PREFIX + ".counts.txt") or \
         args.force_overwrite_all:
 	args.force_overwrite_all = True
         logging.info('Count matrix started.')
-        subprocess.check_call('''awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $14}' %s.intersect.bed | awk '!x[$0]++' | awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $4}' | awk 'BEGiN {OFS = "\t"}; {h[$0]++}; END { for(k in h) print k, h[k] }' | awk 'BEGIN {OFS="\t"}; {print $1 "_" $2 "_" $3, $4, $5}' > %s.counts.txt''' % (OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
+        subprocess.check_call('''awk 'BEGIN {OFS="\t"}; {print $7, $8, $9, $4}' %s.intersect.bed | awk '!x[$0]++' | awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $4}' | awk 'BEGiN {OFS = "\t"}; {h[$0]++}; END { for(k in h) print k, h[k] }' | awk 'BEGIN {OFS="\t"}; {print $1 "_" $2 "_" $3, $4, $5}' > %s.counts.txt''' % (OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
         logging.info('Count matrix ended.')
 
     if not args.keep_intermediates:
