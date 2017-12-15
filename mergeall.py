@@ -213,7 +213,7 @@ if __name__ == '__main__':
         args.force_overwrite_all:
 	args.force_overwrite_all = True
         logging.info('Count matrix started.')
-        subprocess.check_call('''awk 'BEGIN {OFS="\t"}; {print $7, $8, $9, $4}' %s.intersect.bed | awk '!x[$0]++' | awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $4}' | awk 'BEGiN {OFS = "\t"}; {h[$0]++}; END { for(k in h) print k, h[k] }' | awk 'BEGIN {OFS="\t"}; {print $1 "_" $2 "_" $3, $4, $5}' > %s.counts.txt''' % (OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
+        subprocess.check_call('''awk 'BEGIN {OFS="\t"}; {print $7, $8, $9, $4, $1, $2, $3}' %s.intersect.bed | awk '!x[$0]++' | awk 'BEGIN {OFS="\t"}; {print $1, $2, $3, $4}' | awk 'BEGIN {OFS = "\t"}; {h[$0]++}; END { for(k in h) print k, h[k] }' | awk 'BEGIN {OFS="\t"}; {print $1 "_" $2 "_" $3, $4, $5}' > %s.counts.txt''' % (OUTPUT_PREFIX, OUTPUT_PREFIX), shell=True)
         logging.info('Count matrix ended.')
 
     if not args.keep_intermediates:
