@@ -65,6 +65,7 @@ if __name__ == '__main__':
     logging.info('Pipeline started.')
 
     # Check dependencies
+   subprocess.call('module load samtools/latest; module load bedtools/latest', shell=True)
     def cmd_exists(cmd):
         return any(
             os.access(os.path.join(path, cmd), os.X_OK)
@@ -73,6 +74,10 @@ if __name__ == '__main__':
 
     if not cmd_exists("bedtools"):
         logging.info('ERROR bedtools not available')
+        sys.exit()
+
+    if not cmd_exists("samtools"):
+        logging.info('ERROR samtools not available')
         sys.exit()
 
     # Make sorted bed file from all bams
@@ -85,7 +90,7 @@ if __name__ == '__main__':
             args.force_overwrite_all:
 	    args.force_overwrite_all = True
             logging.info('Merge started.')
-            subprocess.check_call('samtools merge %s.merge.bam %s' % (OUTPUT_PREFIX,
+            subprocess.check_call('module load samtools/latest; samtools merge %s.merge.bam %s' % (OUTPUT_PREFIX,
                 ' '.join(args.bamlist)), shell=True)
             subprocess.check_call('samtools index %s.merge.bam' % OUTPUT_PREFIX,
                 shell=True)
@@ -93,7 +98,7 @@ if __name__ == '__main__':
             mergename = OUTPUT_PREFIX + '.merge.bam'
             qcf.write("\n\nTotal reads after merge: ")
             qcf.flush()
-            subprocess.call("samtools view -c -f3 -F12 %s" % (mergename), shell=True, stdout=qcf, stderr=qcf)
+            subprocess.call("module load samtools/latest; samtools view -c -f3 -F12 %s" % (mergename), shell=True, stdout=qcf, stderr=qcf)
         else:
             mergename = OUTPUT_PREFIX + '.merge.bam'
             logging.info('Merge skipped.')
@@ -110,16 +115,16 @@ if __name__ == '__main__':
         logging.info('Deduplication started.')
         subprocess.check_call('python %s %s %s.true.nodups.bam' %
             (DEDUPLICATER, mergename, OUTPUT_PREFIX), shell=True)
-        subprocess.check_call('samtools view %s.true.nodups.bam | sort -u -k1,1 | '
+        subprocess.check_call('module load samtools/latest; samtools view %s.true.nodups.bam | sort -u -k1,1 | '
             'cut -f9 > %s/%s.insertsize.txt' % (OUTPUT_PREFIX, QC_DIRECTORY, args.prefix),
             shell=True)
-        subprocess.check_call('samtools index %s.true.nodups.bam' % OUTPUT_PREFIX,
+        subprocess.check_call('module load samtools/latest; samtools index %s.true.nodups.bam' % OUTPUT_PREFIX,
             shell=True)
         logging.info('Deduplication ended.')
         qcf = open(qc_info, 'a')
         qcf.write("\nTotal reads after deduplication: ")
         qcf.flush()
-        subprocess.call("samtools view -c -f3 -F12 %s.true.nodups.bam" % (OUTPUT_PREFIX), shell=True, stdout=qcf, stderr=qcf)
+        subprocess.call("module load samtools/latest; samtools view -c -f3 -F12 %s.true.nodups.bam" % (OUTPUT_PREFIX), shell=True, stdout=qcf, stderr=qcf)
         qcf.close()
 
     else:
@@ -137,7 +142,7 @@ if __name__ == '__main__':
             logging.info('No blacklist provided, skipping.')
             clean_name = OUTPUT_PREFIX + ".true.nodups.bam"
         else:
-            subprocess.check_call('''bedtools intersect -bed -a %s.true.nodups.bam  '''
+            subprocess.check_call('''module load bedtools/latest; bedtools intersect -bed -a %s.true.nodups.bam  '''
                 '''-b %s -v | sed 's/\/[0-9]//' > %s.clean.bed''' %
                 (OUTPUT_PREFIX, args.blacklist, OUTPUT_PREFIX),
                 shell=True)
@@ -206,7 +211,7 @@ if __name__ == '__main__':
         args.force_overwrite_all:
         logging.info('Intersect started.')
         args.force_overwrite_all = True
-        subprocess.check_call("bedtools intersect -a %s.for_macs.bed -b %s/%s_macs_peaks.narrowPeak -wa -wb >  %s.intersect.bed" % (OUTPUT_PREFIX, MACS_DIRECTORY, args.prefix, OUTPUT_PREFIX), shell=True)
+        subprocess.check_call("module load bedtools/latest; bedtools intersect -a %s.for_macs.bed -b %s/%s_macs_peaks.narrowPeak -wa -wb >  %s.intersect.bed" % (OUTPUT_PREFIX, MACS_DIRECTORY, args.prefix, OUTPUT_PREFIX), shell=True)
         logging.info('Intersect ended.')
 
     if not os.path.exists(OUTPUT_PREFIX + ".counts.txt") or \
