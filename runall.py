@@ -142,7 +142,7 @@ if __name__ == '__main__':
         qcf.write("\n\nBowtie:\n\n")
         qcf.flush()
         logging.info('Bowtie2 started.')
-	subprocess.check_call('module load bowtie2/latest; bowtie2 -3 1 --un-conc-gz %s.unaligned.fq.gz -X 2000 -p %s '
+	subprocess.check_call('module load bowtie2/latest; module load samtools/latest; bowtie2 -3 1 --un-conc-gz %s.unaligned.fq.gz -X 2000 -p %s '
             '-x %s -1 %s -2 %s | samtools view -Sb - > %s.bam' %
             (OUTPUT_PREFIX, args.nthreads, args.genome, trimmer_out1,
             trimmer_out2, OUTPUT_PREFIX), shell=True, stderr=qcf, stdout=qcf)
@@ -158,16 +158,16 @@ if __name__ == '__main__':
         qcf = open(qc_info, 'a')
         qcf.write("\n\nQualiy control:\n\nTotal mitochondrial reads: ")
         qcf.flush()
-        subprocess.call("samtools view %s.bam | grep -c '\tchrM\t' -" % (OUTPUT_PREFIX), shell=True, stdout=qcf, stderr=qcf)
-        subprocess.check_call("samtools view -h -f3 -F12 -q10 %s.bam | grep "
+        subprocess.call("module load samtools/latest; samtools view %s.bam | grep -c '\tchrM\t' -" % (OUTPUT_PREFIX), shell=True, stdout=qcf, stderr=qcf)
+        subprocess.check_call("module load samtools/latest; samtools view -h -f3 -F12 -q10 %s.bam | grep "
             " -v '\tchrM\t' | samtools sort -T %s.sorttemp -@ %s - -o "
             "%s.split.q10.sort.bam" % (OUTPUT_PREFIX, OUTPUT_PREFIX,
             args.nthreads, OUTPUT_PREFIX), shell=True)
-        subprocess.check_call('samtools index %s.split.q10.sort.bam' % OUTPUT_PREFIX,
+        subprocess.check_call('module load samtools/latest; samtools index %s.split.q10.sort.bam' % OUTPUT_PREFIX,
             shell=True)
         qcf.write("\nTotal reads after QC10: ")
         qcf.flush()
-        subprocess.call("samtools view -c -f3 -F12 %s.split.q10.sort.bam" % (OUTPUT_PREFIX), shell=True, stdout=qcf, stderr=qcf)
+        subprocess.call("module load samtools/latest; samtools view -c -f3 -F12 %s.split.q10.sort.bam" % (OUTPUT_PREFIX), shell=True, stdout=qcf, stderr=qcf)
         qcf.write("\n\n")
         qcf.close()
         logging.info('Quality filter finished.')
