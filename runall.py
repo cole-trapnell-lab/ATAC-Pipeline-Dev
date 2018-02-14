@@ -60,6 +60,18 @@ if __name__ == '__main__':
         if not os.path.exists(directory):
             os.mkdir(directory)
 
+    # Check dependencies
+    subprocess.call('module load samtools/latest', shell=True)
+    def cmd_exists(cmd):
+        return any(
+            os.access(os.path.join(path, cmd), os.X_OK)
+            for path in os.environ["PATH"].split(os.pathsep)
+        )
+
+    if not cmd_exists("samtools"):
+        logging.info('ERROR samtools not available')
+        sys.exit()
+
     bcl_out1 = FASTQ_DIRECTORY + '/Undetermined_S0_R1_001.fastq.gz'
     bcl_out2 = FASTQ_DIRECTORY + '/Undetermined_S0_R2_001.fastq.gz'
     bar_out1 = FASTQ_DIRECTORY + '/Undetermined_S0_R1_001.fastq.gz.out.fq.gz'
