@@ -25,12 +25,12 @@ module load julia/latest
 module load pysam/0.8.1
 module load coreutils/8.24
 path/to/runall.py -R [Flowcell run directory] -O [Path to output folder] 
-  -P [Prefix you want on output files] -p 10 
+  -P [Prefix you want on output files] -p 10 --keep_intermediates
 ~~~~ 
 
 To execute, run `qsub runcall.sh`
 
-The first argument of runall.py is the full path to your flowcell data. The second argument is the full path to where you want the output to go. The third argument is optional, and gives each output file an experiment prefix.
+The first argument of runall.py is the full path to your flowcell data. The second argument is the full path to where you want the output to go. The third argument is optional, and gives each output file an experiment prefix. --keep_intermediates tells the pipeline to keep all the intermediate files which lets you restart where you were when something goes wrong. A good idea to have it if there's a chance something will get messed up.
 
 (example: `runall.py -R /net/shendure/vol9/seq/170607_NS500488_0394_AHVHL5BGX2 -O /net/trapnell/vol1/hannah/Projects/tests/ -P hifT -p 10`)
 
@@ -54,7 +54,7 @@ Make a script called `mergecall.sh` with the following contents:
 
 module load julia/latest
 module load coreutils/8.24
-path/to/mergeall.py -B [list of split.q10.sort.bams] -O [Path to output folder] -P [Prefix you want on output files] -C [path to file with each of the valid barcodes allowed in the experiment]
+path/to/mergeall.py -B [list of split.q10.sort.bams] -O [Path to output folder] -P [Prefix you want on output files] -C [path to file with each of the valid barcodes allowed in the experiment] --keep_intermediates
 ~~~~ 
 
 To execute, run `qsub mergecall.sh`
