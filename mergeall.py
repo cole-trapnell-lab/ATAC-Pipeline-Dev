@@ -65,7 +65,7 @@ if __name__ == '__main__':
     logging.info('Pipeline started.')
 
     # Check dependencies
-   subprocess.call('module load samtools/latest; module load bedtools/latest', shell=True)
+    subprocess.call('module load samtools/latest; module load bedtools/latest', shell=True)
     def cmd_exists(cmd):
         return any(
             os.access(os.path.join(path, cmd), os.X_OK)
