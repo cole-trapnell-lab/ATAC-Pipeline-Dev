@@ -52,6 +52,8 @@ Make a script called `mergecall.sh` with the following contents:
 ~~~~ 
 #$ -l mfree=100G
 
+module load python/2.7.3
+module load pysam/0.8.3
 module load julia/latest
 module load coreutils/8.24
 path/to/mergeall.py -B [list of split.q10.sort.bams] -O [Path to output folder] -P [Prefix you want on output files] -C [path to file with each of the valid barcodes allowed in the experiment] --keep_intermediates
