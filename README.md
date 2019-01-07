@@ -24,7 +24,7 @@ NOTE: These defaults assume that you are mapping to hg19 and that you ran the ru
 module load julia/latest
 module load pysam/0.8.1
 module load coreutils/8.24
-path/to/runall.py -R [Flowcell run directory] -O [Path to output folder] 
+python path/to/runall.py -R [Flowcell run directory] -O [Path to output folder] 
   -P [Prefix you want on output files] -p 10 --keep_intermediates
 ~~~~ 
 
@@ -56,7 +56,7 @@ module load python/2.7.3
 module load pysam/0.8.3
 module load julia/latest
 module load coreutils/8.24
-path/to/mergeall.py -B [list of split.q10.sort.bams] -O [Path to output folder] -P [Prefix you want on output files] -C [path to file with each of the valid barcodes allowed in the experiment] --keep_intermediates
+python path/to/mergeall.py -B [list of split.q10.sort.bams] -O [Path to output folder] -P [Prefix you want on output files] -C [path to file with each of the valid barcodes allowed in the experiment] --keep_intermediates
 ~~~~ 
 
 To execute, run `qsub mergecall.sh`
