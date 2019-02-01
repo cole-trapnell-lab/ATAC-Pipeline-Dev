@@ -67,7 +67,9 @@ if __name__ == '__main__':
             os.access(os.path.join(path, cmd), os.X_OK)
             for path in os.environ["PATH"].split(os.pathsep)
         )
-
+    logging.basicConfig(filename= OUTPUT_PREFIX + '.log',format='%(asctime)s '
+        '%(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
+    logging.info('Pipeline started.')
     if not cmd_exists("samtools"):
         logging.info('ERROR samtools not available')
         sys.exit()
@@ -85,9 +87,7 @@ if __name__ == '__main__':
     qcf.write("Runall QC info for " + str(args.rundir) + "\n%s" % datetime.datetime.now())
     qcf.close()
     # Configure logger
-    logging.basicConfig(filename= OUTPUT_PREFIX + '.log',format='%(asctime)s '
-        '%(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
-    logging.info('Pipeline started.')
+
 
     # Submit bcl2fastq only if no existing results or if user wants to
     # overwrite
