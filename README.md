@@ -21,6 +21,8 @@ NOTE: These defaults assume that you are mapping to hg19 and that you ran the ru
 #$ -pe serial 10
 #$ -l mfree=10G
 
+module load samtools/latest
+module load python/2.7.3
 module load julia/latest
 module load pysam/0.8.1
 module load coreutils/8.24
